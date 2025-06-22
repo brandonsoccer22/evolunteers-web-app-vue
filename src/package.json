@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "watch": "NODE_ENV=development vite build --mode development --minify 0 --watch",
         "build": "vite build",
         "dev": "vite"
     },

@@ -6,11 +6,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements Auditable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasBaseModelFeatures;
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +34,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        $this->fillable = array_merge($this->baseFillable, $this->fillable);
+        parent::__construct($attributes);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -40,9 +47,22 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return array_merge(
+            $this->baseCasts,
+            [
+                'email_verified_at' => 'datetime',
+                'password' => 'hashed',
+            ]
+        );
+    }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class)->using(RoleUser::class);
+    }
+
+    public function opportunities()
+    {
+        return $this->belongsToMany(Opportunity::class)->using(UserOpportunity::class);
     }
 }
