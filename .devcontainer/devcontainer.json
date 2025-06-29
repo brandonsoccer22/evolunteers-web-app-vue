@@ -1,0 +1,13 @@
+{
+  "name": "Laravel App",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "php",
+  "workspaceFolder": "/var/www/html",
+  "extensions": [
+    "recca0120.vscode-phpunit",
+    "bmewburn.vscode-intelephense-client"
+  ],
+  "settings": {
+    "phpunit.phpunit": "/var/www/html/vendor/bin/phpunit"
+  }
+}

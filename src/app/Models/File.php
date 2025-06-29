@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\HasBaseModelFeatures;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class File extends Model implements Auditable
 {
-    use HasBaseModelFeatures;
+    use HasBaseModelFeatures, HasFactory;
 
     protected $fillable = [
         'original_name',

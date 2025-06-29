@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\HasBaseModelFeatures;
 
 class Role extends Model implements Auditable
 {

@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\HasBaseModelFeatures;
 
 class OpportunityOrganization extends Pivot implements Auditable
 {

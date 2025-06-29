@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\HasBaseModelFeatures;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Opportunity extends Model implements Auditable
 {
 
-    use HasBaseModelFeatures;
+    use HasBaseModelFeatures, HasFactory;
 
      public function __construct(array $attributes = [])
     {
@@ -56,6 +58,6 @@ class Opportunity extends Model implements Auditable
     public function files()
     {
         return $this->morphToMany(File::class, 'fileable')
-            ->using(\App\Models\Fileable::class); 
+            ->using(\App\Models\Fileable::class);
     }
 }

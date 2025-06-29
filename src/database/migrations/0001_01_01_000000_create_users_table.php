@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,6 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+
+        //create id_seq sequence if it does not exist
+        if (!Schema::hasTable('id_seq')) {
+            DB::statement('CREATE SEQUENCE IF NOT EXISTS id_seq START WITH 1 INCREMENT BY 1');
+        }
+
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');

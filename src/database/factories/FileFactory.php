@@ -17,7 +17,12 @@ class FileFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'original_name' => $this->faker->word . '.jpg',
+            'path' => $this->faker->uuid . '.jpg',
+            'disk' => 'local',
+            'mime_type' => 'image/jpeg',
+            'size' => $this->faker->numberBetween(1000, 1000000),
+            'user_id' => null,
         ];
     }
 }

@@ -1,0 +1,99 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  build:
+    desc: Build and start all containers in detached mode
+    cmds:
+      - docker compose up -d --build --remove-orphans app
+
+  up:
+    desc: Start all containers in detached mode
+    cmds:
+      - docker compose up -d app
+
+  down:
+    desc: Stop and remove all containers
+    cmds:
+      - docker compose down
+
+  restart:
+    desc: Restart all containers
+    cmds:
+      - docker compose up -d --force-recreate app
+
+  composer-install:
+    desc: Run composer install in the composer container
+    cmds:
+      - docker compose run --rm composer install
+
+  artisan:
+    desc: Run artisan in the php container
+    cmds:
+      - docker compose exec php php artisan {{.CLI_ARGS}}
+
+  composer-require:
+    desc: Run composer install in the composer container
+    cmds:
+      - docker compose run --rm composer require {{.CLI_ARGS}}
+
+  composer-require-dev:
+    desc: Run composer install in the composer container
+    cmds:
+      - docker compose run --rm composer require-dev {{.CLI_ARGS}}
+
+  composer-update:
+    desc: Run composer update in the composer container
+    cmds:
+      - docker compose run --rm composer update {{.CLI_ARGS}}
+
+  npm-install:
+    desc: Run npm install in the npm container
+    cmds:
+      - docker compose run --rm npm install {{.CLI_ARGS}}
+
+  npm-require:
+    desc: Run npm install in the npm container
+    cmds:
+      - docker compose run --rm npm install --save {{.CLI_ARGS}}
+
+  npm-require-dev:
+    desc: Run npm install --save-dev in the npm container
+    cmds:
+      - docker compose run --rm npm install --save-dev {{.CLI_ARGS}}
+
+  npm-update:
+    desc: Update node packages and package-lock.json on host
+    cmds:
+      - docker compose run --rm npm update {{.CLI_ARGS}}
+
+  npm-dev:
+    desc: Run npm run dev in the npm container
+    cmds:
+      - docker compose run --rm -p 5173:5173 npm run dev {{.CLI_ARGS}}
+
+  npm-watch:
+    desc: Run npm run watch in the npm container
+    cmds:
+      - docker compose run --rm npm run watch {{.CLI_ARGS}}
+
+  npm-build:
+    desc: Run npm run build in the npm container
+    cmds:
+      - docker compose run --rm npm run build {{.CLI_ARGS}}
+
+  logs:
+    desc: Show logs for all containers
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  ps:
+    desc: Show status of containers
+    cmds:
+      - docker compose ps
+
+  sh:
+    desc: Start a shell in the php container
+    cmds:
+      - docker compose exec php sh

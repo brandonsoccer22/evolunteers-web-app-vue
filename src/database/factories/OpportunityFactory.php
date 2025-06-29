@@ -17,7 +17,10 @@ class OpportunityFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->jobTitle,
+            'description' => $this->faker->sentence,
+            'url' => $this->faker->url,
+            // add other fields as needed
         ];
     }
 }

@@ -16,7 +16,6 @@ public function up()
         $table->foreignId('opportunity_id')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
         $table->foreignId('organization_id')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
         $table->timestampAudits();
-        $table->softDeletes();
     });
 }
 

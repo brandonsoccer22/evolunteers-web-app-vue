@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class OrganizationFactory extends Factory
 {
+    // Uncomment the line below if you want to specify the model for this factory
+    protected $model = Organization::class;
     /**
      * Define the model's default state.
      *
@@ -17,7 +20,8 @@ class OrganizationFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->company,
+            // add other fields as needed
         ];
     }
 }

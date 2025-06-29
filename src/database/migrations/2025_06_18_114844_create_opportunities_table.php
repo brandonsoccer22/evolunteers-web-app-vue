@@ -17,8 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('url')->nullable();
             $table->foreignId('profile_image_id')->nullable()->constrained('files')->nullOnDelete();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampAudits();
         });
     }
 
