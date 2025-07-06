@@ -7,10 +7,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('taggables', function (Blueprint $table) {
-            $table->id();
+            $table->sequence()->primary();
             $table->foreignId('tag_id')->constrained()->onDelete('cascade');
             $table->morphs('taggable'); // taggable_id, taggable_type
             $table->timestampAudits();
+            $table->index('deleted_at');
         });
     }
 

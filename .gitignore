@@ -11,40 +11,40 @@
 /.phpunit.cache
 /.vscode
 !/.vscode/extensions.json
-/.vscode/settings.json
-/.vscode/tasks.json
-/.vscode/launch.json
-/.vscode/phpunit.json
-/.vscode/tsconfig.json
-/.vscode/tslint.json
-/.vscode/tslint.yaml
-/.vscode/tsconfig.json
-/.vscode/tsconfig.app.json
-/.vscode/tsconfig.spec.json
-/.vscode/tsconfig.lib.json
-/.vscode/tsconfig.server.json
-/.vscode/tsconfig.e2e.json
-/.vscode/tsconfig.playwright.json
-/.vscode/tsconfig.playwright.e2e.json
-/.vscode/tsconfig.playwright.lib.json
-/.vscode/tsconfig.playwright.server.json
-/.vscode/tsconfig.playwright.spec.json
-/.vscode/tsconfig.playwright.app.json
-/.vscode/tsconfig.playwright.e2e.json
-/.vscode/tsconfig.playwright.lib.json
-/.vscode/tsconfig.playwright.server.json
-/.vscode/tsconfig.playwright.spec.json
-/.vscode/tsconfig.playwright.app.json
-/.vscode/tsconfig.playwright.e2e.json
-/.vscode/tsconfig.playwright.lib.json
-/.vscode/tsconfig.playwright.server.json
-/.vscode/tsconfig.playwright.spec.json
-/.vscode/tsconfig.playwright.app.json
-/.vscode/tsconfig.playwright.e2e.json
-/.vscode/tsconfig.playwright.lib.json
-/.vscode/tsconfig.playwright.server.json
-/.vscode/tsconfig.playwright.spec.json
-/.vscode/tsconfig.playwright.app.json   
+# /.vscode/settings.json
+# /.vscode/tasks.json
+# /.vscode/launch.json
+# /.vscode/phpunit.json
+# /.vscode/tsconfig.json
+# /.vscode/tslint.json
+# /.vscode/tslint.yaml
+# /.vscode/tsconfig.json
+# /.vscode/tsconfig.app.json
+# /.vscode/tsconfig.spec.json
+# /.vscode/tsconfig.lib.json
+# /.vscode/tsconfig.server.json
+# /.vscode/tsconfig.e2e.json
+# /.vscode/tsconfig.playwright.json
+# /.vscode/tsconfig.playwright.e2e.json
+# /.vscode/tsconfig.playwright.lib.json
+# /.vscode/tsconfig.playwright.server.json
+# /.vscode/tsconfig.playwright.spec.json
+# /.vscode/tsconfig.playwright.app.json
+# /.vscode/tsconfig.playwright.e2e.json
+# /.vscode/tsconfig.playwright.lib.json
+# /.vscode/tsconfig.playwright.server.json
+# /.vscode/tsconfig.playwright.spec.json
+# /.vscode/tsconfig.playwright.app.json
+# /.vscode/tsconfig.playwright.e2e.json
+# /.vscode/tsconfig.playwright.lib.json
+# /.vscode/tsconfig.playwright.server.json
+# /.vscode/tsconfig.playwright.spec.json
+# /.vscode/tsconfig.playwright.app.json
+# /.vscode/tsconfig.playwright.e2e.json
+# /.vscode/tsconfig.playwright.lib.json
+# /.vscode/tsconfig.playwright.server.json
+# /.vscode/tsconfig.playwright.spec.json
+# /.vscode/tsconfig.playwright.app.json   
 /.zed
 /auth.json
 /node_modules

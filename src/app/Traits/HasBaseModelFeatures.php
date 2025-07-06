@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 trait HasBaseModelFeatures
 {
@@ -71,5 +72,24 @@ trait HasBaseModelFeatures
             //     // Place your logic here
             // }
         });
+    }
+
+    public static function getMorphAlias($modelClass = null)
+    {
+        // If no model class is provided, use the current class
+        if ($modelClass === null) {
+            $modelClass = static::class;
+        }
+
+        // Get the morph map and flip it to get [class => alias]
+        // If the morph map is empty, return the original class name
+        if (!Relation::morphMap()) {
+            return $modelClass;
+        }
+
+        $map = Relation::morphMap() ?: [];
+        // Flip the map to get [class => alias]
+        $flipped = array_flip($map);
+        return $flipped[$modelClass] ?? $modelClass;
     }
 }

@@ -12,12 +12,21 @@ class Opportunity extends Model implements Auditable
 
     use HasBaseModelFeatures, HasFactory;
 
-     public function __construct(array $attributes = [])
+    public function __construct(array $attributes = [])
     {
          // Merge parent and child fillable attributes
         $this->fillable = array_merge($this->baseFillable, $this->fillable);
         parent::__construct($attributes);
     }
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name'
+    ];
 
      /**
      * Get the attributes that should be cast.
@@ -47,7 +56,8 @@ class Opportunity extends Model implements Auditable
     public function tags()
     {
         return $this->morphToMany(Tag::class, 'taggable')
-            ->using(\App\Models\Taggable::class);
+            ->using(\App\Models\Taggable::class)
+            ->wherePivotNull('deleted_at');
     }
 
     public function users()
@@ -59,5 +69,30 @@ class Opportunity extends Model implements Auditable
     {
         return $this->morphToMany(File::class, 'fileable')
             ->using(\App\Models\Fileable::class);
+    }
+
+    public function attachTag(Tag $tag, $userId = null)
+    {
+        $tagId = $tag->id;
+        $pivot = \App\Models\Taggable::withTrashed()
+            ->where('tag_id', $tagId)
+            ->where('taggable_id', $this->id)
+            ->where('taggable_type', static::getMorphAlias())
+            ->first();
+
+        if ($pivot) {
+            $pivot->deleted_at = null;
+            $pivot->created_by = $userId ?? auth()->id();
+            $pivot->created_at = now();
+            $pivot->save();
+
+            // Manually fire the restored event for auditing
+            $pivot->fireModelEvent('restored', false);
+        } else {
+            $this->tags()->attach($tagId, [
+                'created_by' => $userId ?? auth()->id(),
+                'created_at' => now(),
+            ]);
+        }
     }
 }

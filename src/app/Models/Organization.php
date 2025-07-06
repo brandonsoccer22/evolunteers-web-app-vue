@@ -13,16 +13,21 @@ class Organization extends Model implements Auditable
 
     use HasBaseModelFeatures, HasFactory;
 
-    protected $fillable = [
-        'name',
-    ];
-
     public function __construct(array $attributes = [])
     {
          // Merge parent and child fillable attributes
         $this->fillable = array_merge($this->baseFillable, $this->fillable);
         parent::__construct($attributes);
     }
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name'
+    ];
 
      /**
      * Get the attributes that should be cast.
@@ -54,6 +59,7 @@ class Organization extends Model implements Auditable
     public function files()
     {
         return $this->morphToMany(File::class, 'fileable')
-            ->using(\App\Models\Fileable::class);
+            ->using(\App\Models\Fileable::class)
+            ->wherePivotNull('deleted_at');
     }
 }

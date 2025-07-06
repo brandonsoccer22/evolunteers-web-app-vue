@@ -115,6 +115,7 @@ services:
       - ./src/routes:/var/www/html/routes:cached
       - ./src/storage:/var/www/html/storage:delegated
       - ./src/vendor:/var/www/html/vendor:delegated
+      - ./src/artisan:/var/www/html/artisan:delegated
       - ./src/composer.json:/var/www/html/composer.json:delegated
       - ./src/composer.lock:/var/www/html/composer.lock:delegated
       - ./src/.env:/var/www/html/.env:cached

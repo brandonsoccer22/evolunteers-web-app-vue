@@ -23,6 +23,11 @@ tasks:
     cmds:
       - docker compose up -d --force-recreate app
 
+  composer:
+    desc: Run composer in the composer container
+    cmds:
+      - docker compose run --rm composer {{.CLI_ARGS}}
+
   composer-install:
     desc: Run composer install in the composer container
     cmds:
@@ -97,3 +102,8 @@ tasks:
     desc: Start a shell in the php container
     cmds:
       - docker compose exec php sh
+
+  phpunit:
+    desc: Run PHPUnit tests in the php container
+    cmds:
+      - docker compose exec php php /var/www/html/vendor/bin/phpunit --configuration /var/www/html/phpunit.xml {{.CLI_ARGS}}

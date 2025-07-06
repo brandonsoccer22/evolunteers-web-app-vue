@@ -10,7 +10,10 @@ class Fileable extends MorphPivot implements Auditable
 {
     use HasBaseModelFeatures;
 
-        public function __construct(array $attributes = [])
+    //source: https://github.com/owen-it/laravel-auditing/issues/626
+    public $incrementing = true;
+
+    public function __construct(array $attributes = [])
     {
          // Merge parent and child fillable attributes
         $this->fillable = array_merge($this->baseFillable, $this->fillable);
