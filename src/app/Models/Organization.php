@@ -6,12 +6,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
 use App\Traits\HasBaseModelFeatures;
+use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Organization extends Model implements Auditable
 {
 
-    use HasBaseModelFeatures, HasFactory;
+    use HasBaseModelFeatures, HasFactory, HasTags;
 
     public function __construct(array $attributes = [])
     {
@@ -50,11 +51,6 @@ class Organization extends Model implements Auditable
         return $this->belongsToMany(Opportunity::class)->using(OpportunityOrganization::class);
     }
 
-    public function tags()
-    {
-        return $this->morphToMany(Tag::class, 'taggable')
-            ->using(\App\Models\Taggable::class);
-    }
 
     public function files()
     {

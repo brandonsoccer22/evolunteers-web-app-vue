@@ -8,11 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use OwenIt\Auditing\Contracts\Auditable;
 use App\Traits\HasBaseModelFeatures;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements Auditable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasBaseModelFeatures;
+    use HasFactory, Notifiable, HasBaseModelFeatures, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -20,7 +21,8 @@ class User extends Authenticatable implements Auditable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
     ];
@@ -59,11 +61,11 @@ class User extends Authenticatable implements Auditable
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class)->using(RoleUser::class);
+        return $this->belongsToMany(Role::class,'user_role')->using(RoleUser::class);
     }
 
     public function opportunities()
     {
-        return $this->belongsToMany(Opportunity::class)->using(UserOpportunity::class);
+        return $this->belongsToMany(Opportunity::class,'user_opportunity')->using(UserOpportunity::class);
     }
 }

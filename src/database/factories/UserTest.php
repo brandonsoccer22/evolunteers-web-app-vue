@@ -14,14 +14,16 @@ class UserTest extends TestCase
 
     public function test_can_create_user()
     {
-        $user = User::factory()->create(['name' => 'Test User']);
+        $user = User::factory()->create(['first_name' => 'Test','last_name'=>'User']);
+        $this->assertDatabaseHas('users', ['first_name' => 'Test','last_name'=>'User']);
         $this->assertDatabaseHas('users', ['name' => 'Test User']);
     }
 
     public function test_can_update_user()
     {
         $user = User::factory()->create();
-        $user->update(['name' => 'Updated User']);
+        $user->update(['first_name' => 'Updated','last_name'=>'User']);
+        $this->assertDatabaseHas('users', ['first_name' => 'Updated','last_name'=>'User']);
         $this->assertDatabaseHas('users', ['name' => 'Updated User']);
     }
 
@@ -65,7 +67,7 @@ class UserTest extends TestCase
         $this->actingAs($admin);
 
         $user = User::factory()->create();
-        $user->update(['name' => 'Changed Name']);
+        $user->update(['first_name' => 'Changed']);
 
         $user->refresh();
         $this->assertEquals($admin->id, $user->updated_by);

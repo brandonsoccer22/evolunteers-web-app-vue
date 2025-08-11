@@ -50,6 +50,7 @@
         "streetsidesoftware.code-spell-checker",
         "edgardmessias.clipboard-manager",
         "task.vscode-task",
-        "recca0120.vscode-phpunit" // <-- PHPUnit Test Explorer
+        "recca0120.vscode-phpunit", // <-- PHPUnit Test Explorer
+        "tinkerun.tinkerun-vscode"
     ]
 }

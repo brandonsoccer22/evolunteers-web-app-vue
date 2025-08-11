@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
             return $this->unsignedBigInteger($col)->default(DB::raw("nextval('{$seq}')"));
         });
 
-        Blueprint::macro('timestampAudits', function () {
+        Blueprint::macro('timestampAudits', function ($includeDeleted = true) {
             /**
              * @var Blueprint $this
              */
@@ -41,8 +41,10 @@ class AppServiceProvider extends ServiceProvider
             $this->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP(0)'));
             $this->bigInteger('updated_by')->nullable();
             $this->timestamp('updated_at')->nullable();
-            $this->bigInteger('deleted_by')->nullable();
-            $this->timestamp('deleted_at')->nullable();
+            if($includeDeleted){
+                $this->bigInteger('deleted_by')->nullable();
+                $this->timestamp('deleted_at')->nullable();
+            }
         });
 
         Relation::morphMap([

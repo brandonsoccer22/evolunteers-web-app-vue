@@ -77,7 +77,7 @@ class OpportunityTest extends TestCase
     {
         $opp = Opportunity::factory()->create();
         $tag = Tag::factory()->create();
-        $opp->tags()->attach($tag);
+        $opp->attachTag($tag);
         $opp->tags()->detach($tag);
         $opp->refresh();
         $this->assertFalse($opp->tags->contains($tag));

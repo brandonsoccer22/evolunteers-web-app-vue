@@ -18,6 +18,9 @@ docker ps
 ### Execute the shell command
 docker exec -it {PHP_CONTAINER_ID} sh 
 
+### Run PHP Units tests
+task phpunit
+
 
 
 

@@ -64,8 +64,10 @@ trait HasBaseModelFeatures
         });
 
         static::deleting(function ($model) {
-            if (Auth::check() && $model->ha) {
+            if (Auth::check()) {
                 $model->deleted_by = Auth::id();
+                // Save quietly to avoid recursion
+                $model->saveQuietly();
             }
             // if (method_exists($model, 'isForceDeleting') && $model->isForceDeleting()) {
             //     // This is a hard delete (force delete)

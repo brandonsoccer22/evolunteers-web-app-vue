@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('file_id')->constrained()->onDelete('cascade');
             $table->morphs('fileable'); // fileable_id, fileable_type
-            $table->timestamps();
+            $table->timestampAudits();
         });
     }
 

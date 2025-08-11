@@ -77,7 +77,7 @@ class OrganizationTest extends TestCase
     {
         $org = Organization::factory()->create();
         $tag = Tag::factory()->create();
-        $org->tags()->attach($tag);
+        $org->attachTag($tag);
         $org->tags()->detach($tag);
         $org->refresh();
         $this->assertFalse($org->tags->contains($tag));

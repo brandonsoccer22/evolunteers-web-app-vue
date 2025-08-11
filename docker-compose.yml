@@ -25,7 +25,7 @@ services:
       - ./src/routes:/var/www/html/routes:cached
       - ./src/storage:/var/www/html/storage:delegated
       - ./src/vendor:/var/www/html/vendor:delegated
-      - ./src/.env:/var/www/html/.env:cached
+      - ./src/.env.docker:/var/www/html/.env:delegated
       - ./src/composer.json:/var/www/html/composer.json:delegated
       - ./src/composer.lock:/var/www/html/composer.lock:delegated
       - ./certs/localhost.pem:/etc/nginx/certs/localhost.pem:ro
@@ -79,7 +79,7 @@ services:
       - ./src/artisan:/var/www/html/artisan:delegated
       - ./src/composer.json:/var/www/html/composer.json:delegated
       - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./src/.env:/var/www/html/.env:cached
+      - ./src/.env.docker:/var/www/html/.env:delegated
       - ./src/phpunit.xml:/var/www/html/phpunit.xml:cached
       - ./src/tests:/var/www/html/tests:cached
     networks:
@@ -118,7 +118,7 @@ services:
       - ./src/artisan:/var/www/html/artisan:delegated
       - ./src/composer.json:/var/www/html/composer.json:delegated
       - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./src/.env:/var/www/html/.env:cached
+      - ./src/.env.docker:/var/www/html/.env:cached
     working_dir: /var/www/html
     networks:
       - laravel

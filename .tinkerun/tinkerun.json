@@ -1,0 +1,8 @@
+{
+  "connections": [
+    {
+      "name": "dev",
+      "command": "export TERM=xterm-256color && php src/artisan tinker"
+    }
+  ]
+}
