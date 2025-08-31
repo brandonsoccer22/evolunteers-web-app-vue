@@ -44,9 +44,10 @@
 # /.vscode/tsconfig.playwright.lib.json
 # /.vscode/tsconfig.playwright.server.json
 # /.vscode/tsconfig.playwright.spec.json
-# /.vscode/tsconfig.playwright.app.json   
+# /.vscode/tsconfig.playwright.app.json
 /.zed
 /auth.json
+/certs
 /node_modules
 Homestead.json
 Homestead.yaml

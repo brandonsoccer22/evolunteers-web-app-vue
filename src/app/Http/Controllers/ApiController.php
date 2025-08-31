@@ -16,9 +16,15 @@ class ApiController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (!Auth::attempt($credentials)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            //return response()->json(['error' => 'Invalid credentials'], 401);
+            return response()
+                ->json(['status' => 'error', 'message' => 'Unauthorized'], 401)
+                ->header('WWW-Authenticate', 'Basic');
         }
 
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
         $tokenResult = $user->createToken('API Token');
         $token = $tokenResult->plainTextToken;
@@ -28,8 +34,13 @@ class ApiController extends Controller
         $tokenResult->accessToken->save();
 
         return response()->json([
+            'user'=>$user,
             'token' => $token,
             'expires_at' => $tokenResult->accessToken->expires_at,
         ]);
+    }
+
+    public function test(){
+        return response()->json(['status' => 'success']);
     }
 }

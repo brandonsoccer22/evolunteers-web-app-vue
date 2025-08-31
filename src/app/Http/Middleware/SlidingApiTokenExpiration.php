@@ -2,6 +2,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class SlidingApiTokenExpiration
@@ -19,8 +20,13 @@ class SlidingApiTokenExpiration
                 // Update expiration (e.g., extend by 2 hours)
                 $accessToken->expires_at = now()->addHours(2);
                 $accessToken->save();
+
+                $user = $accessToken->tokenable; // Get the related user (or model)
+                Auth::login($user); // Log in the user for the current request
+                return $next($request);
             }
         }
-        return $next($request);
+        abort(401, 'Unauthorized');
     }
+
 }
