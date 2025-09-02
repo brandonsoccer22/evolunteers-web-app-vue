@@ -12,7 +12,8 @@ return new class extends Migration
 public function up()
 {
     Schema::create('opportunity_organization', function (Blueprint $table) {
-       $table->sequence()->primary();
+        $table->sequence()->primary();
+        $table->boolean('is_opportunity_owner')->default(true);
         $table->foreignId('opportunity_id')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
         $table->foreignId('organization_id')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
         $table->timestampAudits();

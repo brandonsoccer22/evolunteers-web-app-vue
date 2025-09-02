@@ -14,6 +14,16 @@ class OpportunityOrganization extends Pivot implements Auditable
     //source: https://github.com/owen-it/laravel-auditing/issues/626
     public $incrementing = true;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        //the primary owner of this opportunity
+        'is_opportunity_owner'
+    ];
+
     public function __construct(array $attributes = [])
     {
          // Merge parent and child fillable attributes

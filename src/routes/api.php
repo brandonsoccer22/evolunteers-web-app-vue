@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 use App\Http\Middleware\SlidingApiTokenExpiration;
 
+use App\Http\Controllers\OpportunityController;
+
  Route::get('/health', function () {
         return response()->json(['status' => 'ok']);
 })->name('health');
@@ -12,15 +14,11 @@ use App\Http\Middleware\SlidingApiTokenExpiration;
 
  Route::group(['middleware' => [SlidingApiTokenExpiration::class]], function () {
      Route::get('/test', [ApiController::class, 'test'])->name('test');
- });
 
-
-// Route::prefix('organizations')->as('organizations.')->group(function () {
-
-
-
-// });
-
-
+      Route::group(['middleware' => [SlidingApiTokenExpiration::class]], function () {
+        // Opportunity resource routes
+        Route::resource('opportunities', OpportunityController::class);
+    });
+});
 
 

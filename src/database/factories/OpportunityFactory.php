@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+// use App\Models\Opportunity;
+// use App\Models\Organization;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Opportunity>
@@ -23,4 +25,12 @@ class OpportunityFactory extends Factory
             // add other fields as needed
         ];
     }
+
+    // public function configure()
+    // {
+    //     return $this->afterCreating(function (Opportunity $opportunity) {
+    //         $organizations = Organization::factory()->count(1)->create();
+    //         $opportunity->organizations()->attach($organizations->pluck('id'));
+    //     });
+    // }
 }
