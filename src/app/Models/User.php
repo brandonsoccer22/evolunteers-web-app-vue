@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use OwenIt\Auditing\Contracts\Auditable;
 use App\Traits\HasBaseModelFeatures;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable implements Auditable
 {
@@ -23,6 +24,7 @@ class User extends Authenticatable implements Auditable
     protected $fillable = [
         'first_name',
         'last_name',
+        'name',//computed attribute for full name
         'email',
         'password',
     ];
@@ -67,5 +69,19 @@ class User extends Authenticatable implements Auditable
     public function opportunities()
     {
         return $this->belongsToMany(Opportunity::class,'user_opportunity')->using(UserOpportunity::class);
+    }
+
+    /**
+     * Get the user's full name.
+     *
+     * @return Attribute
+     */
+    public function name(): Attribute
+    {
+        return Attribute::make(
+            //use this is the computed field is not stored in the database
+            //get: fn () => trim("{$this->first_name} {$this->last_name}"),
+            set: fn ($value) => throw new \LogicException("The 'name' attribute is computed and cannot be set.")
+        );
     }
 }

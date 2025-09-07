@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OpportunityUpsertRequest;
 use App\Models\Opportunity;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Http\Resources\OpportunityResource;
 use App\Http\Responses\ApiResponse;
+use App\Http\Responses\BrowserResponse;
 
 class OpportunityController extends Controller
 {
@@ -15,9 +15,9 @@ class OpportunityController extends Controller
     public function create(Request $request)
     {
         if (ApiController::isApiRequest($request)) {
-            return response()->json(['message' => 'Use POST /opportunities to create.'], 405);
+            return ApiResponse::error('Use POST /opportunities to create.', 405);
         }
-        return Inertia::render('Opportunities/Create');
+        return BrowserResponse::render('Opportunities/Create');
     }
 
     public function store(OpportunityUpsertRequest $request)
@@ -37,9 +37,9 @@ class OpportunityController extends Controller
         $opportunity = Opportunity::findOrFail($id);
         $resource = new OpportunityResource($opportunity);
         if (ApiController::isApiRequest($request)) {
-            return ApiResponse::error('Use PUT/PATCH /opportunities/{id} to update.',405);
+            return ApiResponse::error('Use PUT/PATCH /opportunities/{id} to update.', 405);
         }
-        return Inertia::render('Opportunities/Edit', [
+        return BrowserResponse::render('Opportunities/Edit', [
             'opportunity' => $resource,
         ]);
     }
@@ -81,7 +81,7 @@ class OpportunityController extends Controller
             return ApiResponse::model($resource);
         }
 
-        return Inertia::render('Opportunities/Index', [
+        return BrowserResponse::render('opportunities/OpportunitiesIndex', [
             'opportunities' => $resource,
         ]);
     }
@@ -92,10 +92,10 @@ class OpportunityController extends Controller
         $resource = new OpportunityResource($opportunity);
 
         if (ApiController::isApiRequest($request)) {
-             return ApiResponse::model($resource);
+            return ApiResponse::model($resource);
         }
 
-        return Inertia::render('Opportunities/Show', [
+        return BrowserResponse::render('Opportunities/Show', [
             'opportunity' => $resource,
         ]);
     }

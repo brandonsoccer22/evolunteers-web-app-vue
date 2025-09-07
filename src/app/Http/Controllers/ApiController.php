@@ -50,12 +50,12 @@ class ApiController extends Controller
      */
     public static function isApiRequest(Request $request)
     {
-        if ($request->ajax()) {
+        if ($request->header('x-inertia')) {
+            return false; // Inertia requests are browser requests
+        } elseif ($request->ajax()) {
             return true;
         } elseif ($request->wantsJson()) {
             return true;
-        } elseif ($request->header('X-Inertia')) {
-            return false; // Inertia requests are browser requests
         } elseif (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
             return true;

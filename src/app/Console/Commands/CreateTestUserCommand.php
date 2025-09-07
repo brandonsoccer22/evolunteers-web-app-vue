@@ -14,7 +14,7 @@ class CreateTestUserCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'user:create-test {--email=test@example.com} {--password=}';
+    protected $signature = 'user:create-test {--email=test@example.com} {--password=} {--set-password-for-existing}';
 
     /**
      * The console command description.
@@ -29,6 +29,7 @@ class CreateTestUserCommand extends Command
     public function handle()
     {
         $email = $this->option('email');
+        $set_password_for_existing = $this->option('set-password-for-existing');
         if($this->option('password')) {
             $password = $this->option('password');
         } else {
@@ -36,20 +37,28 @@ class CreateTestUserCommand extends Command
         }
 
         $user = User::where('email', $email)->first();
-        if($user){
+        if($user && !$set_password_for_existing){
             $this->info("Test user already exists:");
             $this->line("Email: {$user->email}");
             return 0;
         }
 
-        $user = User::create([
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'email' => $email,
-            'password' => Hash::make($password),
-        ]);
+        $info_message = "Test user created:";
+        if(!$user){
 
-        $this->info("Test user created:");
+             $user = User::create([
+                'first_name' => 'Test',
+                'last_name' => 'User',
+                'email' => $email,
+                'password' => Hash::make($password),
+            ]);
+        } elseif($set_password_for_existing){
+            $info_message = "Test user updated:";
+            $user->password = Hash::make($password);
+            $user->save();
+        }
+
+        $this->info($info_message);
         $this->line("Email: {$user->email}");
         $this->line("Password: {$password}");
 
