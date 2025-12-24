@@ -23,6 +23,21 @@ Route::name('api.')->group(function () {
         Route::post('', [AdminOpportunityController::class, 'create'])
             ->middleware(['auth','verified'])
             ->name('create');
+        Route::get('{opportunity}', [AdminOpportunityController::class, 'show'])
+            ->middleware(['auth','verified'])
+            ->name('show');
+        Route::post('{opportunity}/organizations/{organization}', [AdminOpportunityController::class, 'attachOrganization'])
+            ->middleware(['auth','verified'])
+            ->name('organizations.attach');
+        Route::delete('{opportunity}/organizations/{organization}', [AdminOpportunityController::class, 'detachOrganization'])
+            ->middleware(['auth','verified'])
+            ->name('organizations.detach');
+        Route::post('{opportunity}/tags', [AdminOpportunityController::class, 'addTag'])
+            ->middleware(['auth','verified'])
+            ->name('tags.add');
+        Route::delete('{opportunity}/tags', [AdminOpportunityController::class, 'removeTag'])
+            ->middleware(['auth','verified'])
+            ->name('tags.remove');
         // Route::get('{opportunity}/edit', [AdminOpportunityController::class, 'showEdit'])
         //     ->middleware(['auth','verified'])
         //     ->name('showEdit');
@@ -37,7 +52,4 @@ Route::name('api.')->group(function () {
 
     });
 });
-
-
-
 

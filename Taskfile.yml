@@ -38,6 +38,16 @@ tasks:
     cmds:
       - docker compose exec php php artisan {{.CLI_ARGS}}
 
+  scout-flush:
+    desc: Run php artisan scout:flush in the php container
+    cmds:
+      - docker compose exec php php artisan scout:flush {{.CLI_ARGS}}
+
+  scout-import:
+    desc: Run php artisan scout:import in the php container
+    cmds:
+      - docker compose exec php php artisan scout:import {{.CLI_ARGS}}
+
   composer-require:
     desc: Run composer install in the composer container
     cmds:

@@ -3,6 +3,7 @@ networks:
 
 volumes:
     postgres_data: # Define a named volume for PostgreSQL data
+    typesense_data:
 
 services:
     app:
@@ -38,6 +39,7 @@ services:
             - memcached
             - postgres
             - mailpit
+            - typesense
         networks:
             - laravel
 
@@ -100,6 +102,21 @@ services:
         restart: unless-stopped
         ports:
             - "11211:11211"
+        networks:
+            - laravel
+
+    typesense:
+        image: typesense/typesense:0.25.2
+        restart: unless-stopped
+        command: '--data-dir /data --api-key=${TYPESENSE_API_KEY:-masterKey} --listen-port 8108 --enable-cors'
+        environment:
+            - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-masterKey}
+            - TYPESENSE_DATA_DIR=/data
+            - TYPESENSE_ENABLE_CORS=true
+        ports:
+            - "${TYPESENSE_PORT:-8108}:8108"
+        volumes:
+            - typesense_data:/data
         networks:
             - laravel
 

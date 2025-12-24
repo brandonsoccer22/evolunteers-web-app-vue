@@ -7,11 +7,13 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Traits\HasBaseModelFeatures;
 use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
+use Laravel\Scout\Searchable;
 
 class Opportunity extends Model implements Auditable
 {
 
-    use HasBaseModelFeatures, HasFactory, HasTags;
+    use HasBaseModelFeatures, HasFactory, HasTags, Searchable;
 
     public function __construct(array $attributes = [])
     {
@@ -69,5 +71,46 @@ class Opportunity extends Model implements Auditable
     {
         return $this->morphToMany(File::class, 'fileable')
             ->using(\App\Models\Fileable::class);
+    }
+
+    public function searchableAs(): string
+    {
+        $prefix = config('scout.prefix', '');
+        $collection = 'opportunities';
+
+        return $prefix ? "{$prefix}_{$collection}" : $collection;
+    }
+
+    public function toSearchableArray(): array
+    {
+        $this->loadMissing(['organizations', 'tags']);
+
+        return [
+            'id' => (string) $this->getKey(),
+            'name' => $this->name,
+            'description' => $this->description,
+            'start_date_ts' => $this->start_date ? Carbon::parse($this->start_date)->timestamp : null,
+            'created_at_ts' => $this->created_at->timestamp,
+            'organization_names' => $this->organizations?->pluck('name')->filter()->values()->all() ?? [],
+            'tag_names' => $this->tags?->pluck('name')->filter()->values()->all() ?? [],
+        ];
+    }
+
+    public function typesenseCollectionSchema(): array
+    {
+        return [
+            'name' => $this->searchableAs(),
+            'fields' => [
+                ['name' => 'id', 'type' => 'string'],
+                ['name' => 'name', 'type' => 'string'],
+                ['name' => 'description', 'type' => 'string', 'optional' => true],
+                ['name' => 'start_date_ts', 'type' => 'int64', 'optional' => true],
+                ['name' => 'created_at_ts', 'type' => 'int64', 'optional' => false],
+                ['name' => 'organization_names', 'type' => 'string[]', 'optional' => true],
+                ['name' => 'tag_names', 'type' => 'string[]', 'optional' => true],
+                [ 'name' => '__soft_deleted','type' => 'int32', 'optional' => true],
+            ],
+            'default_sorting_field' => 'created_at_ts',
+        ];
     }
 }
