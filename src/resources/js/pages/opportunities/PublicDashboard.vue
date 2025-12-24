@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { useQuery } from '@tanstack/vue-query';
 
 import Button from '@/components/ui/button/Button.vue';
 import Card from '@/components/ui/card/Card.vue';
 import Input from '@/components/ui/input/Input.vue';
+import VueSelect from '@/components/ui/select/VueSelect.vue';
 import { useAxios } from '@/composables/useAxios';
+import Dialog from '@/components/ui/dialog/Dialog.vue';
+import DialogContent from '@/components/ui/dialog/DialogContent.vue';
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import type { Opportunity } from '@/types';
 
 interface Props {
@@ -23,7 +30,7 @@ type FilterField = 'name' | 'organization' | 'start_date' | 'tag';
 type DateOperator = 'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'neq';
 interface FilterItem {
   id: number;
-  field: FilterField;
+  field: FilterField | '';
   value: string;
   operator?: DateOperator;
 }
@@ -34,9 +41,9 @@ const filters = ref<FilterItem[]>(
   (props.data?.filters as FilterItem[] | undefined)?.map((item) => ({
     ...item,
     id: nextId.value++,
-    field: (item.field as FilterField) ?? 'name',
+    field: (item.field as FilterField) ?? '',
     operator: (item.operator as DateOperator) ?? 'eq',
-  })) ?? [{ id: nextId.value++, field: 'name', value: '' }],
+  })) ?? [{ id: nextId.value++, field: 'name', value: '', operator: 'eq' }],
 );
 const page = ref(1);
 const perPage = ref(12);
@@ -48,10 +55,11 @@ const fieldOptions: { value: FilterField; label: string; placeholder: string }[]
   { value: 'tag', label: 'Tag', placeholder: 'Comma separated tags' },
 ];
 
-const sanitizedFilters = computed(() =>
+const normalizedFilters = computed(() =>
   filters.value
+    .filter((filter) => filter.field !== '')
     .map((filter) => ({
-      field: filter.field === 'name' ? 'name' : filter.field,
+      field: filter.field as FilterField,
       value: filter.value?.toString().trim() ?? '',
       operator: filter.field === 'start_date' ? filter.operator ?? 'eq' : undefined,
     }))
@@ -59,21 +67,42 @@ const sanitizedFilters = computed(() =>
 );
 
 watch(
-  () => sanitizedFilters.value,
+  () => normalizedFilters.value,
   () => {
     page.value = 1;
   },
   { deep: true },
 );
 
-const filtersKey = computed(() => JSON.stringify(sanitizedFilters.value));
+const debouncedFilters = ref(normalizedFilters.value);
+const applyFilters = useDebounceFn(
+  (value: typeof normalizedFilters.value, immediate = false) => {
+    debouncedFilters.value = value;
+    if (immediate) {
+      refetch();
+    }
+  },
+  350,
+  { maxWait: 800 },
+);
+
+watch(
+  () => normalizedFilters.value,
+  (current, previous) => {
+    const immediate = isNonTextChange(previous, current);
+    applyFilters(current, immediate);
+  },
+  { deep: true },
+);
+
+const filtersKey = computed(() => JSON.stringify(debouncedFilters.value));
 
 const { data, isFetching, isError, refetch } = useQuery({
   queryKey: computed(() => ['public-opportunities', page.value, perPage.value, filtersKey.value]),
   queryFn: async () => {
     const response = await axios.get('/opportunities', {
       params: {
-        filters: sanitizedFilters.value,
+        filters: debouncedFilters.value,
         page: page.value,
         per_page: perPage.value,
       },
@@ -94,24 +123,43 @@ const { data, isFetching, isError, refetch } = useQuery({
 
 const results = computed<Opportunity[]>(() => (data.value?.data as Opportunity[]) ?? []);
 const meta = computed(() => (data.value?.meta ?? {}) as Record<string, any>);
+const organizationOptions = computed(() => {
+  const names = new Set<string>();
+  results.value.forEach((item) => {
+    item.organizations?.forEach((org) => {
+      if (org?.name) names.add(org.name);
+    });
+  });
+  return Array.from(names).map((name) => ({ label: name, value: name }));
+});
+const tagOptions = computed(() => {
+  const names = new Set<string>();
+  results.value.forEach((item) => {
+    item.tags?.forEach((tag) => {
+      if (tag?.name) names.add(tag.name);
+    });
+  });
+  return Array.from(names).map((name) => ({ label: name, value: name }));
+});
 
 const addFilter = () => {
   filters.value.push({
     id: nextId.value++,
-    field: 'name',
+    field: '',
     value: '',
+    operator: 'eq',
   });
 };
 
 const removeFilter = (id: number) => {
   if (filters.value.length === 1) {
-    filters.value = [{ id: nextId.value++, field: 'name', value: '' }];
+    filters.value = [{ id: nextId.value++, field: 'name', value: '', operator: 'eq' }];
     return;
   }
   filters.value = filters.value.filter((filter) => filter.id !== id);
 };
 
-const updateFilterField = (id: number, field: FilterField) => {
+const updateFilterField = (id: number, field: FilterField | '') => {
   const target = filters.value.find((filter) => filter.id === id);
   if (!target) return;
   target.field = field;
@@ -145,6 +193,32 @@ const goToPage = (target: number) => {
   const next = Math.max(1, Math.min(target, last));
   if (next !== current) page.value = next;
 };
+
+const selectedOpportunity = ref<Opportunity | null>(null);
+const openModal = (item: Opportunity) => {
+  selectedOpportunity.value = item;
+};
+const closeModal = () => {
+  selectedOpportunity.value = null;
+};
+
+function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof normalizedFilters.value): boolean {
+  if (!prev || !next) return true;
+  if (prev.length !== next.length) return true;
+  for (let i = 0; i < next.length; i += 1) {
+    const a = prev[i];
+    const b = next[i];
+    if (!a || !b) return true;
+    if (a.field !== b.field) return true;
+    if (a.operator !== b.operator) return true;
+    if (a.field === 'name' || a.field === 'description') {
+      if (a.value !== b.value) continue;
+    } else if (a.value !== b.value) {
+      return true;
+    }
+  }
+  return false;
+}
 </script>
 
 <template>
@@ -166,26 +240,23 @@ const goToPage = (target: number) => {
         </div>
       </div>
 
-      <div class="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl backdrop-blur">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-white">Search conditions</h2>
-          <Button size="sm" variant="secondary" @click="addFilter">
-            Add condition
-          </Button>
-        </div>
-        <div class="mt-4 space-y-3">
+      <div class="flex flex-col gap-3">
+        <div
+          v-for="filter in filters"
+          :key="filter.id"
+          class="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3"
+        >
           <div
-            v-for="filter in filters"
-            :key="filter.id"
-            class="grid gap-2 rounded-xl border border-white/10 bg-white/5 p-3 sm:grid-cols-[180px,1fr,auto]"
+            :class="filter.field === 'start_date' ? 'grid w-full grid-cols-[2fr,1fr,1fr] items-center gap-2' : 'grid w-full grid-cols-[3fr,1fr] items-center gap-2'"
           >
-            <label class="flex flex-col gap-1 text-sm font-medium text-slate-100">
-              Field
+            <div class="flex flex-col gap-1 text-sm font-medium text-slate-100">
+              <span class="sr-only">Field</span>
               <select
                 v-model="filter.field"
                 class="rounded-md border border-white/20 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
                 @change="updateFilterField(filter.id, filter.field)"
               >
+                <option disabled value="">Search by...</option>
                 <option
                   v-for="option in fieldOptions"
                   :key="option.value"
@@ -194,51 +265,75 @@ const goToPage = (target: number) => {
                   {{ option.label }}
                 </option>
               </select>
-            </label>
+            </div>
+
+            <div v-if="filter.field === 'start_date'" class="flex flex-col gap-1 text-sm font-medium text-slate-100">
+              <span class="sr-only">Date comparison</span>
+              <select
+                v-model="filter.operator"
+                class="rounded-md border border-white/20 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
+              >
+                <option
+                  v-for="op in dateOperators"
+                  :key="op.value"
+                  :value="op.value"
+                >
+                  {{ op.label }}
+                </option>
+              </select>
+            </div>
 
             <div class="flex flex-col gap-1 text-sm font-medium text-slate-100">
-              <span>Value</span>
-              <Input
-                v-if="filter.field !== 'start_date'"
-                v-model="filter.value"
-                :placeholder="fieldOptions.find((opt) => opt.value === filter.field)?.placeholder"
-                class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
-              />
-              <div v-else class="grid grid-cols-[160px,1fr] gap-2">
-                <select
-                  v-model="filter.operator"
-                  class="rounded-md border border-white/20 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
-                >
-                  <option
-                    v-for="op in dateOperators"
-                    :key="op.value"
-                    :value="op.value"
-                  >
-                    {{ op.label }}
-                  </option>
-                </select>
+              <span class="sr-only">Value</span>
+              <template v-if="filter.field === 'start_date'">
                 <Input
                   v-model="filter.value"
                   type="date"
                   class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
                 />
-              </div>
-              <p class="text-xs font-normal text-slate-300/80" v-if="filter.field === 'tag'">
-                Separate multiple tags with commas.
-              </p>
-            </div>
-
-            <div class="flex items-start justify-end">
-              <Button
-                size="sm"
-                variant="ghost"
-                class="text-slate-200 hover:bg-white/10 hover:text-white"
-                @click="removeFilter(filter.id)"
-              >
-                Remove
-              </Button>
+              </template>
+              <template v-else-if="filter.field === 'organization'">
+                <VueSelect
+                  v-model="filter.value"
+                  :options="organizationOptions"
+                  placeholder="Select organization"
+                  class="bg-slate-950/60 text-white"
+                  @update:modelValue="() => applyFilters(normalizedFilters.value, true)"
+                />
+              </template>
+              <template v-else-if="filter.field === 'tag'">
+                <VueSelect
+                  v-model="filter.value"
+                  :options="tagOptions"
+                  placeholder="Select tag"
+                  class="bg-slate-950/60 text-white"
+                  @update:modelValue="() => applyFilters(normalizedFilters.value, true)"
+                />
+              </template>
+              <template v-else>
+                <Input
+                  v-model="filter.value"
+                  :placeholder="fieldOptions.find((opt) => opt.value === filter.field)?.placeholder || 'Search...'"
+                  class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
+                />
+              </template>
             </div>
           </div>
+          <div class="flex justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              class="text-slate-200 hover:bg-white/10 hover:text-white"
+              @click="removeFilter(filter.id)"
+            >
+              Remove
+            </Button>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <Button size="sm" variant="secondary" @click="addFilter">
+            Add condition
+          </Button>
         </div>
       </div>
 
@@ -278,6 +373,11 @@ const goToPage = (target: number) => {
           v-for="item in results"
           :key="item.id"
           class="group relative flex aspect-square flex-col overflow-hidden border-white/10 bg-white/5 p-5 transition hover:-translate-y-1 hover:border-orange-300/70 hover:shadow-[0_10px_40px_rgba(255,112,66,0.25)]"
+          role="button"
+          tabindex="0"
+          @click="openModal(item)"
+          @keydown.enter.prevent="openModal(item)"
+          @keydown.space.prevent="openModal(item)"
         >
           <div class="flex items-start justify-between gap-3">
             <h3 class="line-clamp-2 text-lg font-semibold text-white">{{ item.name }}</h3>
@@ -306,6 +406,49 @@ const goToPage = (target: number) => {
           </div>
         </Card>
       </div>
+
+      <Dialog :open="!!selectedOpportunity" @update:open="(open) => !open && closeModal()">
+        <DialogContent class="max-w-2xl bg-slate-950 text-slate-50">
+          <DialogHeader>
+            <DialogTitle class="text-2xl font-semibold">{{ selectedOpportunity?.name }}</DialogTitle>
+            <DialogDescription class="text-sm text-slate-300">
+              {{ selectedOpportunity?.organizations?.[0]?.name ?? 'Open opportunity' }}
+            </DialogDescription>
+          </DialogHeader>
+          <div class="mt-4 space-y-4">
+            <p class="text-sm leading-relaxed text-slate-200">
+              {{ selectedOpportunity?.description || 'No description provided yet.' }}
+            </p>
+            <div class="flex flex-wrap gap-3 text-sm text-slate-200">
+              <span class="rounded-full bg-orange-300/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-200">
+                Starts: {{ formatDate(selectedOpportunity?.start_date) }}
+              </span>
+              <span
+                v-for="org in selectedOpportunity?.organizations ?? []"
+                :key="org.id"
+                class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white"
+              >
+                {{ org.name }}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in selectedOpportunity?.tags ?? []"
+                :key="tag.id"
+                class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white"
+              >
+                {{ tag.name }}
+              </span>
+              <span v-if="!selectedOpportunity?.tags?.length" class="text-xs text-slate-300/80">No tags yet</span>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end">
+            <Button variant="secondary" @click="closeModal">
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div
         v-if="isFetching"
