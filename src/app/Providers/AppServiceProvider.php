@@ -55,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
             'user' => \App\Models\User::class,
             'opportunity_organization' => \App\Models\OpportunityOrganization::class,
             'user_opportunity' => \App\Models\UserOpportunity::class,
+            'organization_user' => \App\Models\OrganizationUser::class,
             'fileable' => \App\Models\Fileable::class,
             'taggable' => \App\Models\Taggable::class,
         ]);
@@ -71,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         $loader->alias('User', \App\Models\User::class);
         $loader->alias('OpportunityOrganization', \App\Models\OpportunityOrganization::class);
         $loader->alias('UserOpportunity', \App\Models\UserOpportunity::class);
+        $loader->alias('OrganizationUser', \App\Models\OrganizationUser::class);
         $loader->alias('Fileable', \App\Models\Fileable::class);
         $loader->alias('Taggable', \App\Models\Taggable::class);
     }

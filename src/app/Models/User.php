@@ -66,6 +66,13 @@ class User extends Authenticatable implements Auditable
         return $this->belongsToMany(Role::class,'user_role')->using(RoleUser::class);
     }
 
+    public function organizations()
+    {
+        return $this->belongsToMany(Organization::class, 'organization_user')
+            ->using(OrganizationUser::class)
+            ->wherePivotNull('deleted_at');
+    }
+
     public function opportunities()
     {
         return $this->belongsToMany(Opportunity::class,'user_opportunity')->using(UserOpportunity::class);

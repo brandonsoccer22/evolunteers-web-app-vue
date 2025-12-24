@@ -51,6 +51,13 @@ class Organization extends Model implements Auditable
         return $this->belongsToMany(Opportunity::class)->using(OpportunityOrganization::class);
     }
 
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'organization_user')
+            ->using(OrganizationUser::class)
+            ->wherePivotNull('deleted_at');
+    }
+
 
     public function files()
     {

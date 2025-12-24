@@ -26,12 +26,23 @@ export type AppPageProps<T extends Record<string, unknown> = Record<string, unkn
 
 export interface User {
     id: number;
-    name: string;
+    first_name: string;
+    last_name: string;
+    name?: string;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    organizations?: Organization[];
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface Organization {
+    id: number;
+    name: string;
+    description?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}

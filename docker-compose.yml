@@ -126,12 +126,18 @@ services:
             - laravel
 
     npm:
-        image: node:current-alpine
+        image: node:24-alpine3.23
         volumes:
             - ./src/resources:/var/www/html/resources:cached
             - ./src/package.json:/var/www/html/package.json:delegated
             - ./src/package-lock.json:/var/www/html/package-lock.json:delegated
             - ./src/node_modules:/var/www/html/node_modules:delegated
+            - ./src/vite.config.js:/var/www/html/vite.config.js:delegated
+            - ./src/tailwind.config.js:/var/www/html/tailwind.config.js:delegated
+            - ./src/tsconfig.json:/var/www/html/tsconfig.json:delegated
+            - ./src/vite.env.d.ts:/var/www/html/vite.env.d.ts:delegated
+            - ./certs/localhost.pem:/etc/nginx/certs/localhost.pem:ro
+            - ./certs/localhost-key.pem:/etc/nginx/certs/localhost-key.pem:ro
         ports:
             - "3000:3000"
             - "3001:3001"

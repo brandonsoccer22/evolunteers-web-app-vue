@@ -4,13 +4,16 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "prod": "npm run build",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
-        "watch": "NODE_ENV=development vite build --mode development --minify 0 --watch"
+        "watch": "NODE_ENV=development vite build --mode development --minify 0 --watch",
+        "build-dev": "NODE_ENV=development vite build --mode development --minify 0"
     },
     "dependencies": {
+        "@headlessui/vue": "^1.7.23",
         "@inertiajs/vue3": "^2.1.0",
         "@tanstack/vue-query": "^5.87.1",
         "@tanstack/vue-table": "^8.21.3",
