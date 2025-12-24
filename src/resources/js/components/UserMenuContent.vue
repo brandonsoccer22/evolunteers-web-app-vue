@@ -1,11 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useAppearance } from '@/composables/useAppearance';
 import UserInfo from '@/components/UserInfo.vue';
-import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu/dropdown';
+import {
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu/dropdown';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from 'lucide-vue-next';
+import { LogOut, Monitor, Moon, Settings, Sun } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -14,6 +23,13 @@ interface Props {
 const handleLogout = () => {
     router.flushAll();
 };
+
+const { appearance, updateAppearance } = useAppearance();
+
+const appearanceModel = computed({
+    get: () => appearance.value,
+    set: (value) => updateAppearance(value as 'light' | 'dark' | 'system'),
+});
 
 defineProps<Props>();
 </script>
@@ -32,6 +48,24 @@ defineProps<Props>();
                 Settings
             </Link>
         </DropdownMenuItem>
+    </DropdownMenuGroup>
+    <DropdownMenuSeparator />
+    <DropdownMenuGroup>
+        <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+        <DropdownMenuRadioGroup v-model="appearanceModel">
+            <DropdownMenuRadioItem value="light">
+                <Sun class="h-4 w-4" />
+                Light
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="dark">
+                <Moon class="h-4 w-4" />
+                Dark
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="system">
+                <Monitor class="h-4 w-4" />
+                System
+            </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
