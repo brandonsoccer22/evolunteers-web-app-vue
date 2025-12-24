@@ -27,7 +27,8 @@ class Organization extends Model implements Auditable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name'
+        'name',
+        'description',
     ];
 
      /**

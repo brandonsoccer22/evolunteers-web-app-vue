@@ -1,5 +1,5 @@
 <?php
-// filepath: app/Http/Resources/OpportunityResource.php
+// filepath: app/Http/Resources/OrganizationResource.php
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -14,6 +14,9 @@ class OrganizationResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'opportunities' => OpportunityResource::collection($this->whenLoaded('opportunities')),
+            'users' => $this->whenLoaded('users', function () {
+                return UserSummaryResource::collection($this->users)->resolve();
+            }, []),
             // Add other safe fields here
             // Do NOT include sensitive fields
         ];
