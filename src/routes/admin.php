@@ -6,11 +6,10 @@ use App\Http\Controllers\Admin\AdminOpportunityController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminOrganizationController;
 
-Route::group(['as' => 'admin.', 'prefix' => 'admin'], function () {
+Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'verified']], function () {
     Route::get('dashboard', function () {
         return Inertia::render('admin/Dashboard');
     })
-    ->middleware(['auth','verified'])
     ->name('dashboard');
 
     //Opportunity resource routes
@@ -24,6 +23,16 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin'], function () {
             ->name('showCreate');
         Route::post('', [AdminOpportunityController::class, 'create'])
             ->name('create');
+        Route::get('{opportunity}', [AdminOpportunityController::class, 'show'])
+            ->name('show');
+        Route::post('{opportunity}/organizations/{organization}', [AdminOpportunityController::class, 'attachOrganization'])
+            ->name('organizations.attach');
+        Route::delete('{opportunity}/organizations/{organization}', [AdminOpportunityController::class, 'detachOrganization'])
+            ->name('organizations.detach');
+        Route::post('{opportunity}/tags', [AdminOpportunityController::class, 'addTag'])
+            ->name('tags.add');
+        Route::delete('{opportunity}/tags', [AdminOpportunityController::class, 'removeTag'])
+            ->name('tags.remove');
         // Route::get('{opportunity}/edit', [AdminOpportunityController::class, 'showEdit'])
         //     ->middleware(['auth','verified'])
         //     ->name('showEdit');
@@ -44,5 +53,14 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin'], function () {
         Route::delete('{user}/organizations/{organization}', [AdminUserController::class, 'detachOrganization'])->name('organizations.detach');
     });
 
-    Route::get('organizations', [AdminOrganizationController::class, 'index'])->name('organizations.index');
-})->middleware(['auth','verified']);
+    Route::group(['as' => 'organizations.', 'prefix' => 'organizations'], function () {
+        Route::get('', [AdminOrganizationController::class, 'index'])->name('index');
+        Route::get('create', [AdminOrganizationController::class, 'showCreate'])->name('create');
+        Route::post('', [AdminOrganizationController::class, 'store'])->name('store');
+        Route::get('{organization}', [AdminOrganizationController::class, 'show'])->name('show');
+        Route::patch('{organization}', [AdminOrganizationController::class, 'update'])->name('update');
+        Route::delete('{organization}', [AdminOrganizationController::class, 'destroy'])->name('destroy');
+        Route::post('{organization}/users/{user}', [AdminOrganizationController::class, 'attachUser'])->name('users.attach');
+        Route::delete('{organization}/users/{user}', [AdminOrganizationController::class, 'detachUser'])->name('users.detach');
+    });
+});

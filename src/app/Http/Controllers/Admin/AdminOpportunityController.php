@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\OpportunityUpsertRequest;
 use App\Models\Opportunity;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use App\Http\Resources\OpportunityResource;
 use App\Http\Responses\ApiResponse;
@@ -19,19 +20,30 @@ class AdminOpportunityController extends Controller
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::error('Use POST /opportunities to create.', 405);
         }
-        return BrowserResponse::render('Opportunities/Create');
+        return BrowserResponse::render('admin/opportunities/OpportunityForm');
     }
 
     public function create(OpportunityUpsertRequest $request)
     {
 
-        $opportunity = Opportunity::create($request->validated());
-        $resource = new OpportunityResource($opportunity);
+        $data = $request->validated();
+        $organizationIds = $data['organization_ids'] ?? [];
+        unset($data['organization_ids']);
+
+        $opportunity = Opportunity::create($data);
+
+        if (!empty($organizationIds)) {
+            $opportunity->organizations()->sync($organizationIds);
+        }
+
+        $this->syncTags($opportunity, $data['tag_names'] ?? []);
+
+        $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
 
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
-        return redirect()->route('admin.opportunities.get', ['opportunity' => $opportunity])->with('success', 'Opportunity created.');
+        return redirect()->route('admin.opportunities.show', ['opportunity' => $opportunity])->with('success', 'Opportunity created.');
     }
 
     // public function showEdit(Request $request, $id)
@@ -50,15 +62,25 @@ class AdminOpportunityController extends Controller
     {
         $opportunity = Opportunity::findOrFail($id);
         $data = $request->validated();
+        $organizationIds = $data['organization_ids'] ?? null;
+        unset($data['organization_ids']);
         //$data = array_map(fn($param)=>urldecode($param), $data);
         $opportunity->update($data);
         $opportunity->save();
 
+        if (is_array($organizationIds)) {
+            $opportunity->organizations()->sync($organizationIds);
+        }
+
+        $this->syncTags($opportunity, $data['tag_names'] ?? []);
+
+        $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
+
         if (ApiController::isApiRequest($request)) {
-            return ApiResponse::model(new OpportunityResource($opportunity));
+            return ApiResponse::model($resource);
         }
         return redirect()
-            ->route('opportunities.show', ['opportunity' => $opportunity])
+            ->route('admin.opportunities.show', ['opportunity' => $opportunity])
             ->with('success', 'Opportunity updated.');
     }
 
@@ -71,34 +93,145 @@ class AdminOpportunityController extends Controller
             return ApiResponse::success('Opportunity deleted.');
         }
 
-        return redirect()->route('opportunities.index')->with('success', 'Opportunity deleted.');
+        return redirect()->route('admin.opportunities.index')->with('success', 'Opportunity deleted.');
     }
 
     public function index(Request $request)
     {
-        $opportunities = Opportunity::with('organizations')->get();
+        $perPage = max(1, min($request->integer('per_page', 10), 100));
+        $sort = $request->query('sort', 'created_at');
+        $direction = $request->query('direction', 'desc') === 'asc' ? 'asc' : 'desc';
+        $sortable = ['name', 'description', 'created_at', 'updated_at', 'start_date'];
+        if (!in_array($sort, $sortable, true)) {
+            $sort = 'created_at';
+        }
+
+        $opportunities = Opportunity::with(['organizations', 'tags'])
+            ->when($request->query('search'), function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->query('name'), fn ($query, $name) => $query->where('name', 'like', "%{$name}%"))
+            ->when($request->query('description'), fn ($query, $description) => $query->where('description', 'like', "%{$description}%"))
+            ->orderBy($sort, $direction)
+            ->paginate($perPage)
+            ->appends($request->query());
+
         $resource = OpportunityResource::collection($opportunities);
+        $resourceResponse = $resource->response()->getData(true);
 
         if (ApiController::isApiRequest($request)) {
-            return ApiResponse::model($resource);
+            return response()->json($resourceResponse);
         }
 
         return BrowserResponse::render('admin/opportunities/OpportunitiesIndex', [
-            'opportunities' => $resource,
+            'opportunities' => $resourceResponse['data'] ?? [],
+            'meta' => $resourceResponse['meta'] ?? null,
+            'links' => $resourceResponse['links'] ?? null,
         ]);
     }
 
-    public function get(Request $request, $id)
+    public function show(Request $request, $id)
     {
-        $opportunity = Opportunity::with('organizations')->findOrFail($id);
+        $opportunity = Opportunity::with(['organizations', 'tags'])->findOrFail($id);
         $resource = new OpportunityResource($opportunity);
 
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
-        return BrowserResponse::render('admin/opportunities/OpportunityView', [
-            'opportunity' => $resource,
+        return BrowserResponse::render('admin/opportunities/OpportunityForm', [
+            'opportunity' => $resource->resolve(),
         ]);
+    }
+
+    public function attachOrganization(Request $request, $opportunityId, $organizationId)
+    {
+        $opportunity = Opportunity::findOrFail($opportunityId);
+        $opportunity->organizations()->syncWithoutDetaching([$organizationId]);
+
+        $resource = new OpportunityResource($opportunity->load('organizations'));
+
+        if (ApiController::isApiRequest($request)) {
+            return ApiResponse::model($resource);
+        }
+
+        return redirect()->back()->with('success', 'Organization added.');
+    }
+
+    public function detachOrganization(Request $request, $opportunityId, $organizationId)
+    {
+        $opportunity = Opportunity::findOrFail($opportunityId);
+        $opportunity->organizations()->detach($organizationId);
+
+        $resource = new OpportunityResource($opportunity->load('organizations'));
+
+        if (ApiController::isApiRequest($request)) {
+            return ApiResponse::model($resource);
+        }
+
+        return redirect()->back()->with('success', 'Organization removed.');
+    }
+
+    public function addTag(Request $request, $opportunityId)
+    {
+        $opportunity = Opportunity::findOrFail($opportunityId);
+        $validated = $request->validate([
+            'tag_name' => 'required|string|max:255',
+        ]);
+
+        $tag = Tag::firstOrCreate(['name' => trim($validated['tag_name'])]);
+        $opportunity->tags()->syncWithoutDetaching([$tag->id]);
+
+        $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
+
+        if (ApiController::isApiRequest($request)) {
+            return ApiResponse::model($resource);
+        }
+
+        return redirect()->back()->with('success', 'Tag added.');
+    }
+
+    public function removeTag(Request $request, $opportunityId)
+    {
+        $opportunity = Opportunity::findOrFail($opportunityId);
+        $validated = $request->validate([
+            'tag_name' => 'required|string|max:255',
+        ]);
+
+        $tag = Tag::where('name', trim($validated['tag_name']))->first();
+        if ($tag) {
+            $opportunity->tags()->detach($tag->id);
+        }
+
+        $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
+
+        if (ApiController::isApiRequest($request)) {
+            return ApiResponse::model($resource);
+        }
+
+        return redirect()->back()->with('success', 'Tag removed.');
+    }
+
+    private function syncTags(Opportunity $opportunity, array $tagNames): void
+    {
+        $cleanNames = collect($tagNames)
+            ->map(fn ($name) => trim((string) $name))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($cleanNames->isEmpty()) {
+            $opportunity->tags()->sync([]);
+            return;
+        }
+
+        $tagIds = $cleanNames->map(function ($name) {
+            return Tag::firstOrCreate(['name' => $name])->id;
+        })->all();
+
+        $opportunity->tags()->sync($tagIds);
     }
 }

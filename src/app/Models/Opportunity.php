@@ -27,7 +27,12 @@ class Opportunity extends Model implements Auditable
      */
     protected $fillable = [
         'name',
-        'description'
+        'description',
+        'url',
+        'start_date',
+        'end_date',
+        'start_time',
+        'end_time',
     ];
 
      /**

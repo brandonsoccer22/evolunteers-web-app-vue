@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('url')->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
             $table->foreignId('profile_image_id')->nullable()->constrained('files')->nullOnDelete();
             $table->timestampAudits();
         });

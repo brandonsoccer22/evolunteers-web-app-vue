@@ -17,7 +17,16 @@ class OpportunityUpsertRequest extends AbstractFormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'url' => 'nullable|url|max:2048',
+            'organization_ids' => 'sometimes|array',
+            'organization_ids.*' => 'integer|exists:organizations,id',
+            'tag_names' => 'sometimes|array',
+            'tag_names.*' => 'string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
         ];
     }
 }
