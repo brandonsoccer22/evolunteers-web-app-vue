@@ -1,8 +1,9 @@
 import { dashboard } from '@/routes/admin';
 import opportunities from '@/routes/admin/opportunities';
+import organizations from '@/routes/admin/organizations';
 import users from '@/routes/admin/users';
 import { type NavItem } from '@/types';
-import { HandHeart, LayoutGrid, Users } from 'lucide-vue-next';
+import { Building2, HandHeart, LayoutGrid, Users } from 'lucide-vue-next';
 
 export const mainNavItems: NavItem[] = [
     {
@@ -14,6 +15,11 @@ export const mainNavItems: NavItem[] = [
         title: 'Opportunities',
         href: opportunities.index().url,
         icon: HandHeart,
+    },
+    {
+        title: 'Organizations',
+        href: organizations.index().url,
+        icon: Building2,
     },
     {
         title: 'Users',

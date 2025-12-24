@@ -45,4 +45,49 @@ export interface Organization {
     description?: string | null;
     created_at?: string;
     updated_at?: string;
+    users?: User[];
+}
+
+export interface Opportunity {
+    id: number;
+    name: string;
+    description?: string | null;
+    url?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    organizations?: Organization[];
+    tags?: Tag[];
+}
+
+export interface Tag {
+    id: number;
+    name: string;
+}
+
+export interface PaginationLinks {
+    first?: string | null;
+    last?: string | null;
+    prev?: string | null;
+    next?: string | null;
+}
+
+export interface PaginationMeta {
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    links?: { url: string | null; label: string; active: boolean }[];
+    path?: string;
+    per_page: number;
+    to: number | null;
+    total: number;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    links?: PaginationLinks;
+    meta?: PaginationMeta;
 }
