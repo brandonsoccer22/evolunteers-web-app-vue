@@ -31,3 +31,11 @@ const modelValue = useVModel(props, 'modelValue', emits, {
     )"
   >
 </template>
+
+<style scoped>
+/* Improve visibility of date/time picker icons in dark mode */
+:global(.dark input[type='date']::-webkit-calendar-picker-indicator),
+:global(.dark input[type='time']::-webkit-calendar-picker-indicator) {
+  filter: invert(1);
+}
+</style>
