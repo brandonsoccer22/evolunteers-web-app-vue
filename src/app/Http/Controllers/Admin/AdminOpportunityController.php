@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\ApiController;
 use App\Http\Requests\OpportunityUpsertRequest;
 use App\Models\Opportunity;
 use Illuminate\Http\Request;
@@ -9,10 +11,10 @@ use App\Http\Resources\OpportunityResource;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\BrowserResponse;
 
-class OpportunityController extends Controller
+class AdminOpportunityController extends Controller
 {
 
-    public function create(Request $request)
+    public function showCreate(Request $request)
     {
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::error('Use POST /opportunities to create.', 405);
@@ -20,7 +22,7 @@ class OpportunityController extends Controller
         return BrowserResponse::render('Opportunities/Create');
     }
 
-    public function store(OpportunityUpsertRequest $request)
+    public function create(OpportunityUpsertRequest $request)
     {
 
         $opportunity = Opportunity::create($request->validated());
@@ -29,20 +31,20 @@ class OpportunityController extends Controller
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
-        return redirect()->route('opportunities.show', ['opportunity' => $opportunity])->with('success', 'Opportunity created.');
+        return redirect()->route('admin.opportunities.get', ['opportunity' => $opportunity])->with('success', 'Opportunity created.');
     }
 
-    public function edit(Request $request, $id)
-    {
-        $opportunity = Opportunity::findOrFail($id);
-        $resource = new OpportunityResource($opportunity);
-        if (ApiController::isApiRequest($request)) {
-            return ApiResponse::error('Use PUT/PATCH /opportunities/{id} to update.', 405);
-        }
-        return BrowserResponse::render('Opportunities/Edit', [
-            'opportunity' => $resource,
-        ]);
-    }
+    // public function showEdit(Request $request, $id)
+    // {
+    //     $opportunity = Opportunity::findOrFail($id);
+    //     $resource = new OpportunityResource($opportunity);
+    //     if (ApiController::isApiRequest($request)) {
+    //         return ApiResponse::error('Use PUT/PATCH /opportunities/{id} to update.', 405);
+    //     }
+    //     return BrowserResponse::render('Opportunities/Edit', [
+    //         'opportunity' => $resource,
+    //     ]);
+    // }
 
     public function update(OpportunityUpsertRequest $request, $id)
     {
@@ -60,7 +62,7 @@ class OpportunityController extends Controller
             ->with('success', 'Opportunity updated.');
     }
 
-    public function destroy(Request $request, $id)
+    public function delete(Request $request, $id)
     {
         $opportunity = Opportunity::findOrFail($id);
         $opportunity->delete();
@@ -81,12 +83,12 @@ class OpportunityController extends Controller
             return ApiResponse::model($resource);
         }
 
-        return BrowserResponse::render('opportunities/OpportunitiesIndex', [
+        return BrowserResponse::render('admin/opportunities/OpportunitiesIndex', [
             'opportunities' => $resource,
         ]);
     }
 
-    public function show(Request $request, $id)
+    public function get(Request $request, $id)
     {
         $opportunity = Opportunity::with('organizations')->findOrFail($id);
         $resource = new OpportunityResource($opportunity);
@@ -95,7 +97,7 @@ class OpportunityController extends Controller
             return ApiResponse::model($resource);
         }
 
-        return BrowserResponse::render('Opportunities/Show', [
+        return BrowserResponse::render('admin/opportunities/OpportunityView', [
             'opportunity' => $resource,
         ]);
     }

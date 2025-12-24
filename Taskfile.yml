@@ -107,3 +107,23 @@ tasks:
     desc: Run PHPUnit tests in the php container
     cmds:
       - docker compose exec php php /var/www/html/vendor/bin/phpunit --configuration /var/www/html/phpunit.xml {{.CLI_ARGS}}
+
+  wayfinder:
+    desc: Generate Wayfinder routes in the php container
+    cmds:
+      - php src/artisan wayfinder:generate
+
+  wf:
+    desc: Alias for wayfinder
+    cmds:
+      - task wayfinder
+
+  prod:
+    desc: Build assets using npm run build
+    cmds:
+      - cd src && npm run build
+
+  dev:
+    desc: Build assets using npm run build
+    cmds:
+      - cd src && npm run dev

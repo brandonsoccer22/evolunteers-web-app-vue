@@ -1,179 +1,179 @@
 networks:
-  laravel:
+    laravel:
 
 volumes:
-  postgres_data: # Define a named volume for PostgreSQL data
+    postgres_data: # Define a named volume for PostgreSQL data
 
 services:
-  app:
-    build:
-      context: ./dockerfiles
-      dockerfile: nginx.dockerfile
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    ports:
-      - "8080:80"
-      - "8443:443"
-      - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
-      - "${INERTIA_SSR_PORT:-13714}:${INERTIA_SSR_PORT:-13714}"
-    volumes:
-      - ./src/app:/var/www/html/app:cached
-      - ./src/bootstrap:/var/www/html/bootstrap:cached
-      - ./src/config:/var/www/html/config:cached
-      - ./src/database:/var/www/html/database:cached
-      - ./src/public:/var/www/html/public:cached
-      - ./src/resources:/var/www/html/resources:cached
-      - ./src/routes:/var/www/html/routes:cached
-      - ./src/storage:/var/www/html/storage:delegated
-      - ./src/vendor:/var/www/html/vendor:delegated
-      - ./src/.env.docker:/var/www/html/.env:delegated
-      - ./src/composer.json:/var/www/html/composer.json:delegated
-      - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./certs/localhost.pem:/etc/nginx/certs/localhost.pem:ro
-      - ./certs/localhost-key.pem:/etc/nginx/certs/localhost-key.pem:ro
-    depends_on:
-      - php
-      - redis
-      - memcached
-      - postgres
-      - mailpit
-    networks:
-      - laravel
+    app:
+        build:
+            context: ./dockerfiles
+            dockerfile: nginx.dockerfile
+            args:
+                - UID=${UID:-1000}
+                - GID=${GID:-1000}
+        ports:
+            - "8080:80"
+            - "8443:443"
+            - "${VITE_PORT:-5173}:${VITE_PORT:-5173}"
+            - "${INERTIA_SSR_PORT:-13714}:${INERTIA_SSR_PORT:-13714}"
+        volumes:
+            - ./src/app:/var/www/html/app:cached
+            - ./src/bootstrap:/var/www/html/bootstrap:cached
+            - ./src/config:/var/www/html/config:cached
+            - ./src/database:/var/www/html/database:cached
+            - ./src/public:/var/www/html/public:cached
+            - ./src/resources:/var/www/html/resources:cached
+            - ./src/routes:/var/www/html/routes:cached
+            - ./src/storage:/var/www/html/storage:delegated
+            - ./src/vendor:/var/www/html/vendor:delegated
+            - ./src/.env.docker:/var/www/html/.env:delegated
+            - ./src/composer.json:/var/www/html/composer.json:delegated
+            - ./src/composer.lock:/var/www/html/composer.lock:delegated
+            - ./certs/localhost.pem:/etc/nginx/certs/localhost.pem:ro
+            - ./certs/localhost-key.pem:/etc/nginx/certs/localhost-key.pem:ro
+        depends_on:
+            - php
+            - redis
+            - memcached
+            - postgres
+            - mailpit
+        networks:
+            - laravel
 
-  postgres:
-    image: postgres:alpine
-    restart: unless-stopped
-    tty: true
-    ports:
-      - "${DB_PORT:-5434}:5432"
-    environment:
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-      POSTGRES_DB: ${DB_DATABASE:-laravel}
-      SERVICE_TAGS: dev
-      SERVICE_NAME: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data # Mount the volume to persist data
-      - ./dockerfiles/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
-    networks:
-      - laravel
+    postgres:
+        image: postgres:alpine
+        restart: unless-stopped
+        tty: true
+        ports:
+            - "${DB_PORT:-5434}:5432"
+        environment:
+            POSTGRES_USER: ${DB_USERNAME:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+            POSTGRES_DB: ${DB_DATABASE:-laravel}
+            SERVICE_TAGS: dev
+            SERVICE_NAME: postgres
+        volumes:
+            - postgres_data:/var/lib/postgresql/data # Mount the volume to persist data
+            - ./dockerfiles/postgres/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
+        networks:
+            - laravel
 
-  php:
-    build:
-      context: ./dockerfiles
-      dockerfile: php.dockerfile
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    ports:
-      - "9000:9000"
-    volumes:
-      - ./src/app:/var/www/html/app:cached
-      - ./src/bootstrap:/var/www/html/bootstrap:cached
-      - ./src/config:/var/www/html/config:cached
-      - ./src/database:/var/www/html/database:cached
-      - ./src/public:/var/www/html/public:cached
-      - ./src/resources:/var/www/html/resources:cached
-      - ./src/routes:/var/www/html/routes:cached
-      - ./src/storage:/var/www/html/storage:delegated
-      - ./src/vendor:/var/www/html/vendor:delegated
-      - ./src/artisan:/var/www/html/artisan:delegated
-      - ./src/composer.json:/var/www/html/composer.json:delegated
-      - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./src/.env.docker:/var/www/html/.env:delegated
-      - ./src/phpunit.xml:/var/www/html/phpunit.xml:cached
-      - ./src/tests:/var/www/html/tests:cached
-    networks:
-      - laravel
+    php:
+        build:
+            context: ./dockerfiles
+            dockerfile: php.dockerfile
+            args:
+                - UID=${UID:-1000}
+                - GID=${GID:-1000}
+        ports:
+            - "9001:9000"
+        volumes:
+            - ./src/app:/var/www/html/app:cached
+            - ./src/bootstrap:/var/www/html/bootstrap:cached
+            - ./src/config:/var/www/html/config:cached
+            - ./src/database:/var/www/html/database:cached
+            - ./src/public:/var/www/html/public:cached
+            - ./src/resources:/var/www/html/resources:cached
+            - ./src/routes:/var/www/html/routes:cached
+            - ./src/storage:/var/www/html/storage:delegated
+            - ./src/vendor:/var/www/html/vendor:delegated
+            - ./src/artisan:/var/www/html/artisan:delegated
+            - ./src/composer.json:/var/www/html/composer.json:delegated
+            - ./src/composer.lock:/var/www/html/composer.lock:delegated
+            - ./src/.env.docker:/var/www/html/.env:delegated
+            - ./src/phpunit.xml:/var/www/html/phpunit.xml:cached
+            - ./src/tests:/var/www/html/tests:cached
+        networks:
+            - laravel
 
-  redis:
-    image: valkey/valkey:alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - laravel
+    redis:
+        image: valkey/valkey:alpine
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        networks:
+            - laravel
 
-  memcached:
-    image: memcached:alpine
-    restart: unless-stopped
-    ports:
-      - "11211:11211"
-    networks:
-      - laravel
+    memcached:
+        image: memcached:alpine
+        restart: unless-stopped
+        ports:
+            - "11211:11211"
+        networks:
+            - laravel
 
-  composer:
-    build:
-      context: ./dockerfiles
-      dockerfile: composer.dockerfile
-    volumes:
-      - ./src/app:/var/www/html/app:cached
-      - ./src/bootstrap:/var/www/html/bootstrap:cached
-      - ./src/config:/var/www/html/config:cached
-      - ./src/database:/var/www/html/database:cached
-      - ./src/public:/var/www/html/public:cached
-      - ./src/resources:/var/www/html/resources:cached
-      - ./src/routes:/var/www/html/routes:cached
-      - ./src/storage:/var/www/html/storage:delegated
-      - ./src/vendor:/var/www/html/vendor:delegated
-      - ./src/artisan:/var/www/html/artisan:delegated
-      - ./src/composer.json:/var/www/html/composer.json:delegated
-      - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./src/.env.docker:/var/www/html/.env:cached
-    working_dir: /var/www/html
-    networks:
-      - laravel
+    composer:
+        build:
+            context: ./dockerfiles
+            dockerfile: composer.dockerfile
+        volumes:
+            - ./src/app:/var/www/html/app:cached
+            - ./src/bootstrap:/var/www/html/bootstrap:cached
+            - ./src/config:/var/www/html/config:cached
+            - ./src/database:/var/www/html/database:cached
+            - ./src/public:/var/www/html/public:cached
+            - ./src/resources:/var/www/html/resources:cached
+            - ./src/routes:/var/www/html/routes:cached
+            - ./src/storage:/var/www/html/storage:delegated
+            - ./src/vendor:/var/www/html/vendor:delegated
+            - ./src/artisan:/var/www/html/artisan:delegated
+            - ./src/composer.json:/var/www/html/composer.json:delegated
+            - ./src/composer.lock:/var/www/html/composer.lock:delegated
+            - ./src/.env.docker:/var/www/html/.env:cached
+        working_dir: /var/www/html
+        networks:
+            - laravel
 
-  npm:
-    image: node:current-alpine
-    volumes:
-      - ./src/resources:/var/www/html/resources:cached
-      - ./src/package.json:/var/www/html/package.json:delegated
-      - ./src/package-lock.json:/var/www/html/package-lock.json:delegated
-      - ./src/node_modules:/var/www/html/node_modules:delegated
-    ports:
-      - "3000:3000"
-      - "3001:3001"
-      - "5173:5173"
-    working_dir: /var/www/html
-    entrypoint: [ 'npm' ]
-    networks:
-      - laravel
+    npm:
+        image: node:current-alpine
+        volumes:
+            - ./src/resources:/var/www/html/resources:cached
+            - ./src/package.json:/var/www/html/package.json:delegated
+            - ./src/package-lock.json:/var/www/html/package-lock.json:delegated
+            - ./src/node_modules:/var/www/html/node_modules:delegated
+        ports:
+            - "3000:3000"
+            - "3001:3001"
+            - "5173:5173"
+        working_dir: /var/www/html
+        entrypoint: ["npm"]
+        networks:
+            - laravel
 
-  artisan:
-    build:
-      context: ./dockerfiles
-      dockerfile: php.dockerfile
-      args:
-        - UID=${UID:-1000}
-        - GID=${GID:-1000}
-    volumes:
-      #- ./src:/var/www/html:delegated
-      - ./src/app:/var/www/html/app:cached
-      - ./src/bootstrap:/var/www/html/bootstrap:cached
-      - ./src/config:/var/www/html/config:cached
-      - ./src/database:/var/www/html/database:cached
-      - ./src/public:/var/www/html/public:cached
-      - ./src/resources:/var/www/html/resources:cached
-      - ./src/routes:/var/www/html/routes:cached
-      - ./src/storage:/var/www/html/storage:delegated
-      - ./src/package.json:/var/www/html/package.json:delegated
-      - ./src/package-lock.json:/var/www/html/package-lock.json:delegated
-      - ./src/composer.json:/var/www/html/composer.json:delegated
-      - ./src/composer.lock:/var/www/html/composer.lock:delegated
-      - ./src/vendor:/var/www/html/vendor:delegated
-      - ./src/artisan:/var/www/html/artisan:delegated
-    depends_on:
-      - postgres
-    entrypoint: [ 'php', '/var/www/html/artisan' ]
-    networks:
-      - laravel
+    artisan:
+        build:
+            context: ./dockerfiles
+            dockerfile: php.dockerfile
+            args:
+                - UID=${UID:-1000}
+                - GID=${GID:-1000}
+        volumes:
+            #- ./src:/var/www/html:delegated
+            - ./src/app:/var/www/html/app:cached
+            - ./src/bootstrap:/var/www/html/bootstrap:cached
+            - ./src/config:/var/www/html/config:cached
+            - ./src/database:/var/www/html/database:cached
+            - ./src/public:/var/www/html/public:cached
+            - ./src/resources:/var/www/html/resources:cached
+            - ./src/routes:/var/www/html/routes:cached
+            - ./src/storage:/var/www/html/storage:delegated
+            - ./src/package.json:/var/www/html/package.json:delegated
+            - ./src/package-lock.json:/var/www/html/package-lock.json:delegated
+            - ./src/composer.json:/var/www/html/composer.json:delegated
+            - ./src/composer.lock:/var/www/html/composer.lock:delegated
+            - ./src/vendor:/var/www/html/vendor:delegated
+            - ./src/artisan:/var/www/html/artisan:delegated
+        depends_on:
+            - postgres
+        entrypoint: ["php", "/var/www/html/artisan"]
+        networks:
+            - laravel
 
-  mailpit:
-    image: axllent/mailpit
-    ports:
-        - "1025:1025"
-        - "8025:8025"
-    networks:
-        - laravel
+    mailpit:
+        image: axllent/mailpit
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+        networks:
+            - laravel
