@@ -10,7 +10,9 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('/opportunities', [PublicOpportunityController::class, 'index'])->name('opportunities.index');
+Route::get('/opportunities', [PublicOpportunityController::class, 'index'])
+->name('opportunities.index')
+->middleware('auth');
 
 
 require __DIR__.'/admin.php';

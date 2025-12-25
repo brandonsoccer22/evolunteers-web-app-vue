@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 
 import Button from '@/components/ui/button/Button.vue';
@@ -14,12 +13,15 @@ import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
-import type { Opportunity } from '@/types';
+import type { Opportunity, Tag } from '@/types';
+import { home, logout } from '@/routes';
+import { edit as editProfile } from '@/routes/profile';
 
 interface Props {
   data?: {
     filters?: { field: string; value: string }[];
     opportunities?: Opportunity[];
+    tags?: Tag[];
     meta?: Record<string, unknown>;
   };
 }
@@ -31,22 +33,34 @@ type DateOperator = 'eq' | 'gt' | 'gte' | 'lt' | 'lte' | 'neq';
 interface FilterItem {
   id: number;
   field: FilterField | '';
-  value: string;
+  value: string | number | Record<string, unknown> | null;
   operator?: DateOperator;
 }
 
 const axios = useAxios();
 const nextId = ref(1);
-const filters = ref<FilterItem[]>(
-  (props.data?.filters as FilterItem[] | undefined)?.map((item) => ({
-    ...item,
-    id: nextId.value++,
-    field: (item.field as FilterField) ?? '',
-    operator: (item.operator as DateOperator) ?? 'eq',
-  })) ?? [{ id: nextId.value++, field: 'name', value: '', operator: 'eq' }],
-);
+const initialFilters = (props.data?.filters as FilterItem[] | undefined)?.map((item) => ({
+  ...item,
+  id: nextId.value++,
+  field: (item.field as FilterField) ?? '',
+  operator: (item.operator as DateOperator) ?? 'eq',
+})) ?? [];
+
+if (!initialFilters.length) {
+  initialFilters.push({ id: nextId.value++, field: 'name', value: '', operator: 'eq' });
+}
+
+const filters = ref<FilterItem[]>(initialFilters);
 const page = ref(1);
 const perPage = ref(12);
+
+const normalizeSelectValue = (value: unknown): string | number => {
+  if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
+    const val = (value as Record<string, unknown>).value;
+    return (val as string | number) ?? '';
+  }
+  return (value as string | number) ?? '';
+};
 
 const fieldOptions: { value: FilterField; label: string; placeholder: string }[] = [
   { value: 'name', label: 'Name / description', placeholder: 'Search by title or description' },
@@ -55,12 +69,18 @@ const fieldOptions: { value: FilterField; label: string; placeholder: string }[]
   { value: 'tag', label: 'Tag', placeholder: 'Comma separated tags' },
 ];
 
+const filterValueForQuery = (value: unknown): string => {
+  const normalized = normalizeSelectValue(value);
+  if (normalized == null) return '';
+  return typeof normalized === 'string' ? normalized.trim() : String(normalized);
+};
+
 const normalizedFilters = computed(() =>
   filters.value
     .filter((filter) => filter.field !== '')
     .map((filter) => ({
       field: filter.field as FilterField,
-      value: filter.value?.toString().trim() ?? '',
+      value: filterValueForQuery(filter.value),
       operator: filter.field === 'start_date' ? filter.operator ?? 'eq' : undefined,
     }))
     .filter((filter) => filter.value !== ''),
@@ -74,35 +94,14 @@ watch(
   { deep: true },
 );
 
-const debouncedFilters = ref(normalizedFilters.value);
-const applyFilters = useDebounceFn(
-  (value: typeof normalizedFilters.value, immediate = false) => {
-    debouncedFilters.value = value;
-    if (immediate) {
-      refetch();
-    }
-  },
-  350,
-  { maxWait: 800 },
-);
-
-watch(
-  () => normalizedFilters.value,
-  (current, previous) => {
-    const immediate = isNonTextChange(previous, current);
-    applyFilters(current, immediate);
-  },
-  { deep: true },
-);
-
-const filtersKey = computed(() => JSON.stringify(debouncedFilters.value));
+const filtersKey = computed(() => JSON.stringify(normalizedFilters.value));
 
 const { data, isFetching, isError, refetch } = useQuery({
   queryKey: computed(() => ['public-opportunities', page.value, perPage.value, filtersKey.value]),
   queryFn: async () => {
     const response = await axios.get('/opportunities', {
       params: {
-        filters: debouncedFilters.value,
+        filters: normalizedFilters.value,
         page: page.value,
         per_page: perPage.value,
       },
@@ -113,13 +112,13 @@ const { data, isFetching, isError, refetch } = useQuery({
       meta: response.data?.meta ?? {},
     };
   },
-  keepPreviousData: true,
-  staleTime: 30_000,
+  refetchOnMount: 'always',
   initialData: () => ({
     data: props.data?.opportunities ?? [],
     meta: props.data?.meta ?? {},
   }),
 });
+// Initial fetch will run via query when component mounts and queryKey is ready
 
 const results = computed<Opportunity[]>(() => (data.value?.data as Opportunity[]) ?? []);
 const meta = computed(() => (data.value?.meta ?? {}) as Record<string, any>);
@@ -133,13 +132,16 @@ const organizationOptions = computed(() => {
   return Array.from(names).map((name) => ({ label: name, value: name }));
 });
 const tagOptions = computed(() => {
-  const names = new Set<string>();
+  const tags = new Map<number, string>();
+  props.data?.tags?.forEach((tag) => {
+    if (tag?.id != null && tag?.name) tags.set(tag.id, tag.name);
+  });
   results.value.forEach((item) => {
     item.tags?.forEach((tag) => {
-      if (tag?.name) names.add(tag.name);
+      if (tag?.id != null && tag?.name) tags.set(tag.id, tag.name);
     });
   });
-  return Array.from(names).map((name) => ({ label: name, value: name }));
+  return Array.from(tags.entries()).map(([id, name]) => ({ label: name, value: id }));
 });
 
 const addFilter = () => {
@@ -159,16 +161,19 @@ const removeFilter = (id: number) => {
   filters.value = filters.value.filter((filter) => filter.id !== id);
 };
 
+const updateFilterValue = (id: number, value: unknown, immediate = true) => {
+  const target = filters.value.find((filter) => filter.id === id);
+  if (!target) return;
+  target.value = value as Record<string, unknown> | string | number | null;
+};
+
 const updateFilterField = (id: number, field: FilterField | '') => {
   const target = filters.value.find((filter) => filter.id === id);
   if (!target) return;
   target.field = field;
-  if (field === 'start_date') {
-    target.value = '';
-    target.operator = 'eq';
-  } else {
-    target.operator = undefined;
-  }
+  // Clear previous value whenever the field changes so stale select objects don't bleed into other inputs
+  target.value = '';
+  target.operator = field === 'start_date' ? 'eq' : undefined;
 };
 
 const dateOperators: { value: DateOperator; label: string }[] = [
@@ -191,45 +196,57 @@ const goToPage = (target: number) => {
   const current = meta.value?.current_page ?? 1;
   const last = meta.value?.last_page ?? 1;
   const next = Math.max(1, Math.min(target, last));
-  if (next !== current) page.value = next;
+  if (next !== current) {
+    page.value = next;
+    refetch();
+  }
 };
 
 const selectedOpportunity = ref<Opportunity | null>(null);
+const showLogoutSubmitting = ref(false);
+const submitLogout = async () => {
+  showLogoutSubmitting.value = true;
+  try {
+    await axios.post(logout().url);
+    window.location.href = home().url;
+  } finally {
+    showLogoutSubmitting.value = false;
+  }
+};
+
 const openModal = (item: Opportunity) => {
   selectedOpportunity.value = item;
 };
 const closeModal = () => {
   selectedOpportunity.value = null;
 };
-
-function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof normalizedFilters.value): boolean {
-  if (!prev || !next) return true;
-  if (prev.length !== next.length) return true;
-  for (let i = 0; i < next.length; i += 1) {
-    const a = prev[i];
-    const b = next[i];
-    if (!a || !b) return true;
-    if (a.field !== b.field) return true;
-    if (a.operator !== b.operator) return true;
-    if (a.field === 'name' || a.field === 'description') {
-      if (a.value !== b.value) continue;
-    } else if (a.value !== b.value) {
-      return true;
-    }
-  }
-  return false;
-}
 </script>
 
 <template>
   <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50">
     <Head title="Opportunities" />
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-12 pt-10 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <Button as="a" :href="home().url" size="sm" variant="ghost" class="rounded-full bg-white/10 px-4 text-white hover:bg-white/20">
+            eVol
+          </Button>
+          <Button size="sm" variant="secondary" class="rounded-full px-4" :disabled="showLogoutSubmitting" @click="submitLogout">
+            {{ showLogoutSubmitting ? 'Logging out...' : 'Logout' }}
+          </Button>
+          <Button as="a" :href="editProfile().url" size="icon" variant="ghost" class="rounded-full bg-white/10 text-white hover:bg-white/20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.5 20.25a7.5 7.5 0 0115 0" />
+            </svg>
+          </Button>
+        </div>
+      </div>
       <div class="flex flex-col gap-3">
         <p class="text-sm uppercase tracking-[0.24em] text-orange-300">Find your next chance to help</p>
         <div class="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 class="text-3xl font-semibold text-white sm:text-4xl">Opportunities dashboard</h1>
+            <h1 class="text-3xl font-semibold text-white sm:text-4xl">Opportunities</h1>
             <p class="text-base text-slate-200/80 sm:text-lg">
               Combine multiple filters, search through names and descriptions, and skim what starts next.
             </p>
@@ -287,7 +304,7 @@ function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof norm
               <span class="sr-only">Value</span>
               <template v-if="filter.field === 'start_date'">
                 <Input
-                  v-model="filter.value"
+                  v-model.lazy="(filter.value as string | number)"
                   type="date"
                   class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
                 />
@@ -298,7 +315,7 @@ function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof norm
                   :options="organizationOptions"
                   placeholder="Select organization"
                   class="bg-slate-950/60 text-white"
-                  @update:modelValue="() => applyFilters(normalizedFilters.value, true)"
+                  @update:modelValue="(val: any) => updateFilterValue(filter.id, val, true)"
                 />
               </template>
               <template v-else-if="filter.field === 'tag'">
@@ -307,13 +324,13 @@ function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof norm
                   :options="tagOptions"
                   placeholder="Select tag"
                   class="bg-slate-950/60 text-white"
-                  @update:modelValue="() => applyFilters(normalizedFilters.value, true)"
+                  @update:modelValue="(val) => updateFilterValue(filter.id, val, true)"
                 />
               </template>
               <template v-else>
                 <Input
-                  v-model="filter.value"
-                  :placeholder="fieldOptions.find((opt) => opt.value === filter.field)?.placeholder || 'Search...'"
+                  v-model="(filter.value as string | number)"
+                  :placeholder="fieldOptions.find((opt: any) => opt.value === filter.field)?.placeholder || 'Search...'"
                   class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
                 />
               </template>
@@ -381,9 +398,15 @@ function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof norm
         >
           <div class="flex items-start justify-between gap-3">
             <h3 class="line-clamp-2 text-lg font-semibold text-white">{{ item.name }}</h3>
-            <span class="rounded-full bg-orange-300/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-200">
-              {{ item.organizations?.[0]?.name ?? 'Open' }}
-            </span>
+            <div class="flex max-w-[45%] flex-wrap justify-end gap-1">
+              <span
+                v-for="tag in (item.tags ?? []).slice(0, 3)"
+                :key="tag.id"
+                class="rounded-full bg-orange-300/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-orange-200"
+              >
+                {{ tag.name }}
+              </span>
+            </div>
           </div>
           <p class="mt-2 line-clamp-4 text-sm text-slate-200/80">
             {{ item.description || 'No description provided yet.' }}
@@ -393,16 +416,9 @@ function isNonTextChange(prev: typeof normalizedFilters.value, next: typeof norm
               <span class="font-semibold text-white">Starts</span>
               <span>{{ formatDate(item.start_date) }}</span>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="tag in item.tags ?? []"
-                :key="tag.id"
-                class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white"
-              >
-                {{ tag.name }}
-              </span>
-              <span v-if="!item.tags?.length" class="text-xs text-slate-300/80">No tags yet</span>
-            </div>
+            <p class="line-clamp-1 text-xs text-slate-200/80">
+              {{ item.organizations?.map((o) => o.name).filter(Boolean).join(', ') || 'Open opportunity' }}
+            </p>
           </div>
         </Card>
       </div>

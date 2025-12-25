@@ -6,6 +6,8 @@ use App\Http\Requests\OpportunitySearchRequest;
 use App\Services\OpportunitySearchService;
 use App\Http\Responses\BrowserResponse;
 use App\Http\Controllers\ApiController;
+use App\Http\Resources\TagResource;
+use App\Models\Tag;
 
 class PublicOpportunityController extends Controller
 {
@@ -26,9 +28,12 @@ class PublicOpportunityController extends Controller
             return response()->json($results);
         }
 
+        $tagResource = TagResource::collection(Tag::all());
+
         return BrowserResponse::render('opportunities/PublicDashboard', [
             'filters' => $filters,
             'opportunities' => $results['data'] ?? [],
+            'tags'=>$tagResource->resolve(),
             'meta' => $results['meta'] ?? [],
         ]);
     }

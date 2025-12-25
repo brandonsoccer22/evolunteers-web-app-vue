@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Http\Resources\OpportunityResource;
 use App\Models\Opportunity;
+use App\Models\Tag;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -36,7 +37,8 @@ class OpportunitySearchService
     {
         $text = [];
         $organizations = [];
-        $tags = [];
+        $tagNames = [];
+        $tagIds = [];
         $startDate = null;
         $startDateOperator = 'eq';
 
@@ -57,7 +59,14 @@ class OpportunitySearchService
                     break;
                 case 'tag':
                 case 'tags':
-                    $tags = array_merge($tags, $this->splitValues($value));
+                    $parts = $this->splitValues($value);
+                    foreach ($parts as $part) {
+                        if (is_numeric($part)) {
+                            $tagIds[] = (int) $part;
+                        } else {
+                            $tagNames[] = (string) $part;
+                        }
+                    }
                     break;
                 case 'start_date':
                     $startDate = Carbon::parse($value);
@@ -69,7 +78,7 @@ class OpportunitySearchService
         return [
             'text' => $text,
             'organizations' => collect($organizations)->filter()->unique()->values()->all(),
-            'tags' => collect($tags)->filter()->unique()->values()->all(),
+            'tags' => $this->resolveTagNames($tagNames, $tagIds),
             'start_date' => $startDate,
             'start_date_operator' => $startDateOperator,
         ];
@@ -204,6 +213,22 @@ class OpportunitySearchService
         return collect($values)
             ->map(fn ($value) => '"' . addslashes((string) $value) . '"')
             ->implode(',');
+    }
+
+    protected function resolveTagNames(array $tagNames, array $tagIds): array
+    {
+        $names = collect($tagNames);
+
+        if (!empty($tagIds)) {
+            $idNames = Tag::whereIn('id', $tagIds)->pluck('name');
+            $names = $names->merge($idNames);
+        }
+
+        return $names
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     protected function normalizeOperator(string $operator): string
