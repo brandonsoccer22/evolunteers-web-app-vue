@@ -17,10 +17,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import users from '@/routes/admin/users';
 import userOrganizations from '@/routes/admin/users/organizations';
 import type { BreadcrumbItem, Organization, User } from '@/types';
+import { usePage } from '@inertiajs/vue3';
 
 const props = defineProps<{
     data?: {
         user?: User | null;
+        availableRoles?: string[];
     } | null;
 }>();
 
@@ -28,6 +30,8 @@ const axios = useAxios();
 const initialUser = computed<User | null>(() => props.data?.user ?? null);
 const currentUserId = ref<number | null>(initialUser.value?.id ?? null);
 const isEdit = computed(() => currentUserId.value !== null);
+const availableRoles = computed<string[]>(() => props.data?.availableRoles ?? []);
+const page = usePage();
 
 interface UserFormState {
     first_name: string;
@@ -35,6 +39,7 @@ interface UserFormState {
     email: string;
     password: string;
     organization_ids: number[];
+    roles: string[];
 }
 
 const form = ref<UserFormState>({
@@ -43,6 +48,7 @@ const form = ref<UserFormState>({
     email: '',
     password: '',
     organization_ids: [],
+    roles: ['User'],
 });
 
 const attachedOrganizations = ref<Organization[]>([]);
@@ -74,6 +80,7 @@ const hydrateForm = (user: User | null) => {
     if(attachedOrganizations.value){
         form.value.organization_ids = attachedOrganizations.value.map((org) => org.id);
     }
+    form.value.roles = user.roles ?? [];
 
 };
 
@@ -100,6 +107,7 @@ const submit = async () => {
             last_name: form.value.last_name,
             email: form.value.email,
             organization_ids: attachedOrganizations.value.map((org) => org.id),
+            roles: form.value.roles,
         };
 
         if (form.value.password) {
@@ -184,6 +192,10 @@ const detachOrganization = async (orgId: number) => {
 };
 
 const pageTitle = computed(() => (isEdit.value ? 'Edit User' : 'Create User'));
+const canEditRoles = computed(() => {
+    const roles = (page.props as any)?.auth?.roles ?? [];
+    return Array.isArray(roles) && roles.includes('Admin');
+});
 </script>
 
 <template>
@@ -261,6 +273,28 @@ const pageTitle = computed(() => (isEdit.value ? 'Edit User' : 'Create User'));
               <p class="text-xs text-muted-foreground">
                 {{ isEdit ? 'Leave blank to keep the existing password.' : 'Minimum 8 characters.' }}
               </p>
+            </div>
+            <div
+              v-if="canEditRoles"
+              class="space-y-2"
+            >
+              <Label>Roles</Label>
+              <div class="flex flex-wrap gap-2">
+                <label
+                  v-for="role in availableRoles"
+                  :key="role"
+                  class="inline-flex items-center gap-2 rounded border border-border px-3 py-2 text-sm"
+                >
+                  <input
+                    v-model="form.roles"
+                    :value="role"
+                    type="checkbox"
+                    class="h-4 w-4"
+                  >
+                  <span>{{ role }}</span>
+                </label>
+              </div>
+              <p class="text-xs text-muted-foreground">Select one or more roles for the user.</p>
             </div>
           </CardContent>
           <CardFooter class="flex items-center gap-3">

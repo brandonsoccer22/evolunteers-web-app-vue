@@ -63,7 +63,28 @@ class User extends Authenticatable implements Auditable
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class,'user_role')->using(RoleUser::class);
+        return $this->belongsToMany(Role::class, 'user_role')
+            ->using(RoleUser::class)
+            ->wherePivotNull('deleted_at');
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles->contains(fn (Role $role) => $role->name === $roleName);
+    }
+
+    public function hasAnyRole(string ...$roleNames): bool
+    {
+        if (empty($roleNames)) {
+            return false;
+        }
+
+        return $this->roles->contains(fn (Role $role) => in_array($role->name, $roleNames, true));
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(Role::ADMIN);
     }
 
     public function organizations()

@@ -12,6 +12,10 @@ class Role extends Model implements Auditable
 {
     use HasBaseModelFeatures, HasFactory;
 
+    public const ADMIN = 'Admin';
+    public const ORGANIZATION_MANAGER = 'Organization Manager';
+    public const USER = 'User';
+
     protected $fillable = [
         'name',
     ];
@@ -40,6 +44,8 @@ class Role extends Model implements Auditable
 
     public function users()
     {
-        return $this->belongsToMany(User::class)->using(RoleUser::class);
+        return $this->belongsToMany(User::class)
+            ->using(RoleUser::class)
+            ->wherePivotNull('deleted_at');
     }
 }
