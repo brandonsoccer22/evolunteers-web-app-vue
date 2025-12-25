@@ -10,21 +10,25 @@ export const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        allowedRoles: ['Admin', 'Organization Manager'],
     },
     {
         title: 'Opportunities',
         href: opportunities.index().url,
         icon: HandHeart,
+        allowedRoles: ['Admin', 'Organization Manager'],
     },
     {
         title: 'Organizations',
         href: organizations.index().url,
         icon: Building2,
+        allowedRoles: ['Admin', 'Organization Manager'],
     },
     {
         title: 'Users',
         href: users.index().url,
         icon: Users,
+        allowedRoles: ['Admin'],
     },
     // ...other items
 ];

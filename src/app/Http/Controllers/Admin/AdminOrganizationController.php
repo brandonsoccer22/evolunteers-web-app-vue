@@ -10,16 +10,22 @@ use App\Http\Responses\ApiResponse;
 use App\Http\Responses\BrowserResponse;
 use App\Models\Organization;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 
 class AdminOrganizationController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Organization::with('users');
 
         if ($search = $request->query('search')) {
             $query->where('name', 'ilike', "%{$search}%");
+        }
+
+        if ($user && !$user->isAdmin()) {
+            $query->whereHas('users', fn ($q) => $q->where('users.id', $user->id));
         }
 
         $organizations = $query->orderBy('name')->limit(50)->get();
@@ -36,6 +42,10 @@ class AdminOrganizationController extends Controller
 
     public function showCreate(Request $request)
     {
+        if (!$request->user()?->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::error('Use POST /admin/organizations to create.', 405);
         }
@@ -48,6 +58,7 @@ class AdminOrganizationController extends Controller
     public function show(Request $request, $id)
     {
         $organization = Organization::with('users')->findOrFail($id);
+        $this->ensureCanAccessOrganization($request->user(), $organization);
         $resource = new OrganizationResource($organization);
 
         if (ApiController::isApiRequest($request)) {
@@ -61,6 +72,10 @@ class AdminOrganizationController extends Controller
 
     public function store(OrganizationUpsertRequest $request)
     {
+        if (!$request->user()?->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $data = $request->validated();
         $userIds = $data['user_ids'] ?? [];
         unset($data['user_ids']);
@@ -83,8 +98,17 @@ class AdminOrganizationController extends Controller
     public function update(OrganizationUpsertRequest $request, $id)
     {
         $organization = Organization::findOrFail($id);
+        $user = $request->user();
+        $this->ensureCanAccessOrganization($user, $organization);
+
         $data = $request->validated();
         $userIds = $data['user_ids'] ?? null;
+
+        if (!$user?->isAdmin()) {
+            // Organization managers can update org details but not membership
+            $userIds = null;
+        }
+
         unset($data['user_ids']);
 
         $organization->update($data);
@@ -104,6 +128,10 @@ class AdminOrganizationController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        if (!$request->user()?->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $organization = Organization::findOrFail($id);
         $organization->delete();
 
@@ -116,6 +144,10 @@ class AdminOrganizationController extends Controller
 
     public function attachUser(Request $request, $organizationId, $userId)
     {
+        if (!$request->user()?->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $organization = Organization::findOrFail($organizationId);
         $user = User::findOrFail($userId);
 
@@ -132,6 +164,10 @@ class AdminOrganizationController extends Controller
 
     public function detachUser(Request $request, $organizationId, $userId)
     {
+        if (!$request->user()?->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
         $organization = Organization::findOrFail($organizationId);
         $user = User::findOrFail($userId);
 
@@ -144,5 +180,23 @@ class AdminOrganizationController extends Controller
         }
 
         return ApiResponse::model($resource);
+    }
+
+    protected function ensureCanAccessOrganization(?User $user, Organization $organization): void
+    {
+        if (!$user) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $isManagerOfOrg = $user->hasRole(Role::ORGANIZATION_MANAGER)
+            && $organization->users()->where('users.id', $user->id)->exists();
+
+        if (!$isManagerOfOrg) {
+            abort(403, 'Unauthorized.');
+        }
     }
 }

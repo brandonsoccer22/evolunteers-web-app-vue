@@ -7,6 +7,8 @@ use App\Http\Controllers\ApiController;
 use App\Http\Requests\OpportunityUpsertRequest;
 use App\Models\Opportunity;
 use App\Models\Tag;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Resources\OpportunityResource;
 use App\Http\Responses\ApiResponse;
@@ -20,6 +22,7 @@ class AdminOpportunityController extends Controller
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::error('Use POST /opportunities to create.', 405);
         }
+
         return BrowserResponse::render('admin/opportunities/OpportunityForm');
     }
 
@@ -29,6 +32,8 @@ class AdminOpportunityController extends Controller
         $data = $request->validated();
         $organizationIds = $data['organization_ids'] ?? [];
         unset($data['organization_ids']);
+
+        $this->assertOrganizationAccess($request->user(), $organizationIds);
 
         $opportunity = Opportunity::create($data);
 
@@ -61,6 +66,8 @@ class AdminOpportunityController extends Controller
     public function update(OpportunityUpsertRequest $request, $id)
     {
         $opportunity = Opportunity::findOrFail($id);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
+
         $data = $request->validated();
         $organizationIds = $data['organization_ids'] ?? null;
         unset($data['organization_ids']);
@@ -69,6 +76,7 @@ class AdminOpportunityController extends Controller
         $opportunity->save();
 
         if (is_array($organizationIds)) {
+            $this->assertOrganizationAccess($request->user(), $organizationIds);
             $opportunity->organizations()->sync($organizationIds);
         }
 
@@ -87,6 +95,7 @@ class AdminOpportunityController extends Controller
     public function delete(Request $request, $id)
     {
         $opportunity = Opportunity::findOrFail($id);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
         $opportunity->delete();
 
         if (ApiController::isApiRequest($request)) {
@@ -98,6 +107,7 @@ class AdminOpportunityController extends Controller
 
     public function index(Request $request)
     {
+        $user = $request->user();
         $perPage = max(1, min($request->integer('per_page', 10), 100));
         $sort = $request->query('sort', 'created_at');
         $direction = $request->query('direction', 'desc') === 'asc' ? 'asc' : 'desc';
@@ -107,6 +117,10 @@ class AdminOpportunityController extends Controller
         }
 
         $opportunities = Opportunity::with(['organizations', 'tags'])
+            ->when($user && !$user->isAdmin() && $user->hasRole(Role::ORGANIZATION_MANAGER), function ($query) use ($user) {
+                $orgIds = $this->manageableOrganizationIds($user);
+                $query->whereHas('organizations', fn ($q) => $q->whereIn('organizations.id', $orgIds));
+            })
             ->when($request->query('search'), function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -136,6 +150,7 @@ class AdminOpportunityController extends Controller
     public function show(Request $request, $id)
     {
         $opportunity = Opportunity::with(['organizations', 'tags'])->findOrFail($id);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
         $resource = new OpportunityResource($opportunity);
 
         if (ApiController::isApiRequest($request)) {
@@ -150,6 +165,8 @@ class AdminOpportunityController extends Controller
     public function attachOrganization(Request $request, $opportunityId, $organizationId)
     {
         $opportunity = Opportunity::findOrFail($opportunityId);
+        $this->assertOpportunityAccess($request->user(), $opportunity, allowUnassigned: true);
+        $this->assertOrganizationAccess($request->user(), [$organizationId]);
         $opportunity->organizations()->syncWithoutDetaching([$organizationId]);
 
         $resource = new OpportunityResource($opportunity->load('organizations'));
@@ -164,6 +181,8 @@ class AdminOpportunityController extends Controller
     public function detachOrganization(Request $request, $opportunityId, $organizationId)
     {
         $opportunity = Opportunity::findOrFail($opportunityId);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
+        $this->assertOrganizationAccess($request->user(), [$organizationId]);
         $opportunity->organizations()->detach($organizationId);
 
         $resource = new OpportunityResource($opportunity->load('organizations'));
@@ -178,6 +197,7 @@ class AdminOpportunityController extends Controller
     public function addTag(Request $request, $opportunityId)
     {
         $opportunity = Opportunity::findOrFail($opportunityId);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
         $validated = $request->validate([
             'tag_name' => 'required|string|max:255',
         ]);
@@ -197,6 +217,7 @@ class AdminOpportunityController extends Controller
     public function removeTag(Request $request, $opportunityId)
     {
         $opportunity = Opportunity::findOrFail($opportunityId);
+        $this->assertOpportunityAccess($request->user(), $opportunity);
         $validated = $request->validate([
             'tag_name' => 'required|string|max:255',
         ]);
@@ -233,5 +254,63 @@ class AdminOpportunityController extends Controller
         })->all();
 
         $opportunity->tags()->sync($tagIds);
+    }
+
+    /**
+     * Ensure the current user can manage all provided organization IDs.
+     */
+    private function assertOrganizationAccess(?User $user, array $organizationIds): void
+    {
+        if (empty($organizationIds)) {
+            if ($user && $user->hasRole(Role::ORGANIZATION_MANAGER)) {
+                abort(403, 'Organization managers must select at least one organization.');
+            }
+            return;
+        }
+
+        if (!$user) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $manageableIds = $this->manageableOrganizationIds($user);
+        $invalidIds = array_diff($organizationIds, $manageableIds);
+
+        if (!empty($invalidIds) || !$user->hasRole(Role::ORGANIZATION_MANAGER)) {
+            abort(403, 'Unauthorized.');
+        }
+    }
+
+    /**
+     * Ensure the current user can manage the provided opportunity.
+     */
+    private function assertOpportunityAccess(?User $user, Opportunity $opportunity, bool $allowUnassigned = false): void
+    {
+        if (!$user) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if (!$user->hasRole(Role::ORGANIZATION_MANAGER)) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $orgIds = $this->manageableOrganizationIds($user);
+        $hasOrg = $opportunity->organizations()->whereIn('organizations.id', $orgIds)->exists();
+
+        if (!$hasOrg && !($allowUnassigned && $opportunity->organizations()->count() === 0)) {
+            abort(403, 'Unauthorized.');
+        }
+    }
+
+    private function manageableOrganizationIds(User $user): array
+    {
+        return $user->organizations()->pluck('organizations.id')->all();
     }
 }

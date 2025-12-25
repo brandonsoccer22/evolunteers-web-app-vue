@@ -16,6 +16,9 @@ class UserResource extends JsonResource
             'organizations' => $this->whenLoaded('organizations', function () {
                 return OrganizationSummaryResource::collection($this->organizations)->resolve();
             }, []),
+            'roles' => $this->whenLoaded('roles', function () {
+                return $this->roles->pluck('name')->values()->all();
+            }, []),
         ];
     }
 }

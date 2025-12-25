@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\AdminOpportunityController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminOrganizationController;
 
-Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'verified']], function () {
+Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'verified', 'role:Admin,Organization Manager']], function () {
     Route::get('dashboard', function () {
         return Inertia::render('admin/Dashboard');
     })
@@ -42,7 +42,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'v
             ->name('delete');
     });
 
-    Route::group(['as' => 'users.', 'prefix' => 'users'], function () {
+    Route::group(['as' => 'users.', 'prefix' => 'users', 'middleware' => ['role:Admin']], function () {
         Route::get('', [AdminUserController::class, 'index'])->name('index');
         Route::get('create', [AdminUserController::class, 'createForm'])->name('create');
         Route::post('', [AdminUserController::class, 'store'])->name('store');

@@ -43,6 +43,8 @@ class UserUpsertRequest extends AbstractFormRequest
             ],
             'organization_ids' => ['sometimes', 'array'],
             'organization_ids.*' => ['integer', 'exists:organizations,id'],
+            'roles' => ['sometimes', 'array'],
+            'roles.*' => ['string', Rule::exists('roles', 'name')],
         ];
     }
 }

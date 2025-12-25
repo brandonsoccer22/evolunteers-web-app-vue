@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SlidingApiTokenExpiration;
+use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +25,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'auth.token.custom'=>SlidingApiTokenExpiration::class,
+            'role' => EnsureUserHasRole::class,
          ]);
 
         $middleware->web(append: [

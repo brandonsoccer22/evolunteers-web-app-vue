@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use App\Models\Opportunity;
 use App\Models\Organization;
+use App\Models\Role;
 use Illuminate\Database\QueryException;
 
 class DatabaseSeeder extends Seeder
@@ -32,6 +33,26 @@ class DatabaseSeeder extends Seeder
             } else {
                 throw $e; // rethrow if it's a different error
             }
+        }
+
+        $this->seedRoles();
+        $this->assignAdminRoleToTestUser();
+    }
+
+    protected function seedRoles(): void
+    {
+        foreach ([Role::ADMIN, Role::ORGANIZATION_MANAGER, Role::USER] as $roleName) {
+            Role::firstOrCreate(['name' => $roleName]);
+        }
+    }
+
+    protected function assignAdminRoleToTestUser(): void
+    {
+        $user = User::where('email', 'test@example.com')->first();
+        $adminRole = Role::where('name', Role::ADMIN)->first();
+
+        if ($user && $adminRole) {
+            $user->roles()->syncWithoutDetaching([$adminRole->id]);
         }
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\BrowserResponse;
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -20,7 +21,7 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('organizations')->get();
+        $users = User::with(['organizations', 'roles'])->get();
         $resource = UserResource::collection($users);
 
         if (ApiController::isApiRequest($request)) {
@@ -38,12 +39,14 @@ class AdminUserController extends Controller
             return ApiResponse::error('Use POST /admin/users to create.', 405);
         }
 
-        return BrowserResponse::render('admin/users/UserForm');
+        return BrowserResponse::render('admin/users/UserForm', [
+            'availableRoles' => $this->availableRoles(),
+        ]);
     }
 
     public function show(Request $request, $id)
     {
-        $user = User::with('organizations')->findOrFail($id);
+        $user = User::with(['organizations', 'roles'])->findOrFail($id);
 
         $resource = new UserResource($user);
 
@@ -53,6 +56,7 @@ class AdminUserController extends Controller
 
         return BrowserResponse::render('admin/users/UserForm', [
             'user' => $resource->resolve(),
+            'availableRoles' => $this->availableRoles(),
         ]);
     }
 
@@ -60,7 +64,9 @@ class AdminUserController extends Controller
     {
         $data = $request->validated();
         $organizationIds = $data['organization_ids'] ?? [];
+        $roleNames = $data['roles'] ?? [];
         unset($data['organization_ids']);
+        unset($data['roles']);
 
         $generatedPassword = null;
         if (empty($data['password'])) {
@@ -74,12 +80,23 @@ class AdminUserController extends Controller
             $user->organizations()->sync($organizationIds);
         }
 
+        $roleIds = $this->roleIdsFromNames($roleNames);
+        if (empty($roleIds)) {
+            $defaultRoleId = $this->defaultRoleId();
+            if ($defaultRoleId) {
+                $roleIds[] = $defaultRoleId;
+            }
+        }
+        if (!empty($roleIds)) {
+            $user->roles()->sync($roleIds);
+        }
+
         if ($generatedPassword) {
             $token = Password::createToken($user);
             Mail::to($user->email)->send(new UserPasswordResetMail($user, $token));
         }
 
-        $resource = new UserResource($user->load('organizations'));
+        $resource = new UserResource($user->load(['organizations', 'roles']));
 
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::model($resource);
@@ -93,7 +110,9 @@ class AdminUserController extends Controller
         $user = User::findOrFail($id);
         $data = $request->validated();
         $organizationIds = $data['organization_ids'] ?? null;
+        $roleNames = $data['roles'] ?? null;
         unset($data['organization_ids']);
+        unset($data['roles']);
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -105,7 +124,12 @@ class AdminUserController extends Controller
             $user->organizations()->sync($organizationIds);
         }
 
-        $resource = new UserResource($user->load('organizations'));
+        if (is_array($roleNames)) {
+            $roleIds = $this->roleIdsFromNames($roleNames);
+            $user->roles()->sync($roleIds);
+        }
+
+        $resource = new UserResource($user->load(['organizations', 'roles']));
 
         if (ApiController::isApiRequest($request)) {
             return ApiResponse::model($resource);
@@ -156,5 +180,24 @@ class AdminUserController extends Controller
         }
 
         return redirect()->back()->with('success', 'Organization removed.');
+    }
+
+    private function availableRoles()
+    {
+        return Role::orderBy('name')->pluck('name')->values();
+    }
+
+    private function roleIdsFromNames(array $names): array
+    {
+        if (empty($names)) {
+            return [];
+        }
+
+        return Role::whereIn('name', $names)->pluck('id')->all();
+    }
+
+    private function defaultRoleId(): ?int
+    {
+        return Role::where('name', Role::USER)->value('id');
     }
 }
