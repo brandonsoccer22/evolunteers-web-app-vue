@@ -1,0 +1,20 @@
+{
+  "name": "evol-infrastructure",
+  "version": "1.0.0",
+  "description": "AWS CDK code to generate infrastructure",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-cdk-lib": "^2.233.0",
+    "constructs": "^10.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
