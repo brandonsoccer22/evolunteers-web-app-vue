@@ -50,6 +50,9 @@
 /auth.json
 /certs
 /node_modules
+/infrastructure/cdk/node_modules
+/infrastructure/cdk/bin
+/infrastructure/cdk/cdk.out
 Homestead.json
 Homestead.yaml
 Thumbs.db

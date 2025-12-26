@@ -137,3 +137,30 @@ tasks:
     desc: Build assets using npm run build
     cmds:
       - cd src && npm run dev
+
+  docker-build-prod:
+    desc: Build production image (composer install + npm build inside container)
+    vars:
+      IMAGE: "{{.IMAGE | default \"evolunteers-web\"}}"
+      TAG: "{{.TAG | default \"latest\"}}"
+      PLATFORM: "{{.PLATFORM | default \"linux/arm64\"}}"
+    cmds:
+      - docker buildx build --platform {{.PLATFORM}} --load -f dockerfiles/app.prod.dockerfile -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
+  
+  docker-build-prod-no-cache:
+    desc: Build production image without cache
+    vars:
+      IMAGE: "{{.IMAGE | default \"evolunteers-web\"}}"
+      TAG: "{{.TAG | default \"latest\"}}"
+      PLATFORM: "{{.PLATFORM | default \"linux/arm64\"}}"
+    cmds:
+      - docker buildx build --no-cache --platform {{.PLATFORM}} --load -f dockerfiles/app.prod.dockerfile -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
+
+  docker-push-prod:
+    desc: Push production image to registry
+    vars:
+      IMAGE: "{{.IMAGE | default \"evolunteers-web\"}}"
+      TAG: "{{.TAG | default \"latest\"}}"
+      PLATFORM: "{{.PLATFORM | default \"linux/amd64,linux/arm64\"}}"
+    cmds:
+      - docker buildx build --platform {{.PLATFORM}} --push -f dockerfiles/app.prod.dockerfile -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .

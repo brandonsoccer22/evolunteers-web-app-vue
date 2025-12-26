@@ -1,0 +1,14 @@
+{
+  "hosted-zone:account=861786514405:domainName=evolnow.org:region=us-east-1": {
+    "Id": "/hostedzone/Z01099771EVFB345QH0TX",
+    "Name": "evolnow.org."
+  },
+  "availability-zones:account=861786514405:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e",
+    "us-east-1f"
+  ]
+}
