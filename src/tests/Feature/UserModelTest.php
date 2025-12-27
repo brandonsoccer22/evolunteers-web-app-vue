@@ -8,7 +8,7 @@ use App\Models\Role;
 use App\Models\Opportunity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-class UserTest extends TestCase
+class UserModelTest extends TestCase
 {
     use RefreshDatabase;
 

@@ -7,6 +7,8 @@ use App\Models\Opportunity;
 use App\Models\Organization;
 use App\Models\Tag;
 use App\Models\File;
+use App\Models\Taggable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class OpportunityTest extends TestCase
@@ -81,6 +83,37 @@ class OpportunityTest extends TestCase
         $opp->tags()->detach($tag);
         $opp->refresh();
         $this->assertFalse($opp->tags->contains($tag));
+    }
+
+    public function test_opportunity_can_restore_soft_deleted_tag_pivot()
+    {
+        $opp = Opportunity::factory()->create();
+        $tag = Tag::factory()->create();
+        $now = now();
+
+        DB::table('taggables')->insert([
+            'tag_id' => $tag->id,
+            'taggable_id' => $opp->id,
+            'taggable_type' => Opportunity::class,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'deleted_at' => $now,
+        ]);
+
+        $opp->attachTag($tag);
+
+        $this->assertTrue($opp->fresh()->tags->contains($tag));
+        $this->assertSame(1, Taggable::withTrashed()
+            ->where('tag_id', $tag->id)
+            ->where('taggable_id', $opp->id)
+            ->where('taggable_type', Opportunity::class)
+            ->count());
+        $this->assertTrue(DB::table('taggables')
+            ->where('tag_id', $tag->id)
+            ->where('taggable_id', $opp->id)
+            ->where('taggable_type', Opportunity::class)
+            ->whereNull('deleted_at')
+            ->exists());
     }
 
     public function test_opportunity_files_are_deleted_when_opportunity_is_deleted()
