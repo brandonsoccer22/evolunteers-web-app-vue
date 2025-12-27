@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { login, register } from '@/routes';
+import { login, logout } from '@/routes';
+import { index as adminLink } from '@/routes/admin/opportunities';
 import opportunityRoutes from '@/routes/opportunities';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+const page = usePage();
+const user = computed(() => page.props.auth?.user ?? null);
+const roles = computed(() => page.props.auth?.roles ?? []);
+const canSeeAdmin = computed(() => roles.value.includes('Admin') || roles.value.includes('Organization Manager'));
 </script>
 
 <template>
@@ -13,11 +20,26 @@ import { Head, Link } from '@inertiajs/vue3';
         <header class="mb-6 w-full max-w-[335px] text-sm not-has-[nav]:hidden lg:max-w-4xl">
             <nav class="flex items-center justify-end gap-4">
                 <Link
-                    v-if="$page.props?.auth?.user"
+                    v-if="canSeeAdmin"
+                    :href="adminLink().url"
+                    class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                >
+                    Admin
+                </Link>
+                <Link
+                    v-if="user"
                     :href="opportunityRoutes.index().url"
                     class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                 >
                     Opportunities
+                </Link>
+                <Link
+                    v-if="user"
+                    :href="logout()"
+                    as="button"
+                    class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                >
+                    Log out
                 </Link>
                 <template v-else>
                     <Link
@@ -27,7 +49,8 @@ import { Head, Link } from '@inertiajs/vue3';
                         Log in
                     </Link>
                     <Link
-                        :href="register()"
+                        v-if="$page.props?.auth?.registerUrl"
+                        :href="$page.props?.auth?.registerUrl"
                         class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                     >
                         Register
@@ -61,7 +84,7 @@ import { Head, Link } from '@inertiajs/vue3';
                         eVol lets organizations post volunteer opportunities that users can sign up for.<br />
                         Connect, contribute, and make a difference in your community!
                     </p>
-                    <ul class="mb-4 flex flex-col lg:mb-6">
+                    <ul v-if="!$page.props?.auth?.user" class="mb-4 flex flex-col lg:mb-6">
                         <li class="relative flex items-center gap-4 py-2">
                             <span class="relative bg-white py-1 dark:bg-[#161615]">
                                 <span class="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#e3e3e0] bg-[#FDFDFC] shadow dark:border-[#3E3E3A] dark:bg-[#161615]">
@@ -79,7 +102,32 @@ import { Head, Link } from '@inertiajs/vue3';
                                 </span>
                             </span>
                             <span>
-                                Ready to get started? <a href="#" class="ml-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]">Sign up or log in</a> to find or post opportunities.
+                                Ready to get started?
+                                <template v-if="$page.props?.auth?.registerUrl">
+                                    <Link
+                                        :href="$page.props?.auth?.registerUrl"
+                                        class="ml-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
+                                    >
+                                        Sign up
+                                    </Link>
+                                    or
+                                    <Link
+                                        :href="login()"
+                                        class="ml-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
+                                    >
+                                        log in
+                                    </Link>
+                                    to find or post opportunities.
+                                </template>
+                                <template v-else>
+                                    <Link
+                                        :href="login()"
+                                        class="ml-1 font-medium text-[#f53003] underline underline-offset-4 dark:text-[#FF4433]"
+                                    >
+                                        Log in
+                                    </Link>
+                                    to find or post opportunities.
+                                </template>
                             </span>
                         </li>
                     </ul>
