@@ -20,9 +20,9 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'v
          Route::get('', [AdminOpportunityController::class, 'index'])
             ->name('index');
         Route::get('create', [AdminOpportunityController::class, 'showCreate'])
-            ->name('showCreate');
-        Route::post('', [AdminOpportunityController::class, 'create'])
             ->name('create');
+        Route::post('', [AdminOpportunityController::class, 'store'])
+            ->name('store');
         Route::get('{opportunity}', [AdminOpportunityController::class, 'show'])
             ->name('show');
         Route::post('{opportunity}/organizations/{organization}', [AdminOpportunityController::class, 'attachOrganization'])
@@ -38,8 +38,8 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin', 'middleware' => ['auth', 'v
         //     ->name('showEdit');
         Route::patch('{opportunity}', [AdminOpportunityController::class, 'update'])
             ->name('update');
-        Route::delete('{opportunity}', [AdminOpportunityController::class, 'delete'])
-            ->name('delete');
+        Route::delete('{opportunity}', [AdminOpportunityController::class, 'destroy'])
+            ->name('destroy');
     });
 
     Route::group(['as' => 'users.', 'prefix' => 'users', 'middleware' => ['role:Admin']], function () {

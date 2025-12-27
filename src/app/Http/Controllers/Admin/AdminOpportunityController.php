@@ -26,7 +26,7 @@ class AdminOpportunityController extends Controller
         return BrowserResponse::render('admin/opportunities/OpportunityForm');
     }
 
-    public function create(OpportunityUpsertRequest $request)
+    public function store(OpportunityUpsertRequest $request)
     {
 
         $data = $request->validated();
@@ -92,7 +92,7 @@ class AdminOpportunityController extends Controller
             ->with('success', 'Opportunity updated.');
     }
 
-    public function delete(Request $request, $id)
+    public function destroy(Request $request, $id)
     {
         $opportunity = Opportunity::findOrFail($id);
         $this->assertOpportunityAccess($request->user(), $opportunity);

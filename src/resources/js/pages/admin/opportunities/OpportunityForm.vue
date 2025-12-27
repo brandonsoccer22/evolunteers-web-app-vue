@@ -124,7 +124,7 @@ const submit = async () => {
         if (currentOpportunityId.value) {
             response = await axios.patch(opportunities.update(currentOpportunityId.value).url, payload);
         } else {
-            response = await axios.post(opportunities.create().url, payload);
+            response = await axios.post(opportunities.store().url, payload);
         }
 
         const savedOpportunity = (response.data?.data ?? response.data) as Opportunity | null;

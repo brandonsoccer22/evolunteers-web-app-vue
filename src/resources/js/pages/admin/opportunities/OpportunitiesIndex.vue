@@ -113,7 +113,7 @@ const table = useVueTable({
     getSortedRowModel: getSortedRowModel(),
 });
 
-const createUrl = opportunitiesRoutes.showCreate().url;
+const createUrl = opportunitiesRoutes.create().url;
 
 
 const toggleSorting = (columnId: string) => {
