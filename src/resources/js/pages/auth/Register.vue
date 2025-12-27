@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import RegisteredUserController from '@/actions/App/Http/Controllers/Auth/RegisteredUserController';
+//import RegisteredUserController from '@/actions/App/Http/Controllers/Auth/RegisteredUserController';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button/button';
@@ -9,23 +9,33 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
 import { Form, Head } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
+
 </script>
 
 <template>
     <AuthBase title="Create an account" description="Enter your details below to create your account">
         <Head title="Register" />
 
+        <!-- v-bind="RegisteredUserController?.store?.form()" -->
         <Form
-            v-bind="RegisteredUserController.store.form()"
+            v-if="$page.props?.auth?.registerUrl"
+            :action="$page.props?.auth?.registerUrl"
+            method="post"
             :reset-on-success="['password', 'password_confirmation']"
             v-slot="{ errors, processing }"
             class="flex flex-col gap-6"
         >
             <div class="grid gap-6">
                 <div class="grid gap-2">
-                    <Label for="name">Name</Label>
-                    <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" name="name" placeholder="Full name" />
-                    <InputError :message="errors.name" />
+                    <Label for="first_name">First Name</Label>
+                    <Input id="first_name" type="text" required autofocus :tabindex="1" autocomplete="first_name" name="first_name" placeholder="First name" />
+                    <InputError :message="errors.first_name" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="last_name">Last Name</Label>
+                    <Input id="last_name" type="text" required autofocus :tabindex="1" autocomplete="last_name" name="last_name" placeholder="Last name" />
+                    <InputError :message="errors.last_name" />
                 </div>
 
                 <div class="grid gap-2">
