@@ -63,7 +63,7 @@ const normalizeSelectValue = (value: unknown): string | number => {
 };
 
 const fieldOptions: { value: FilterField; label: string; placeholder: string }[] = [
-  { value: 'name', label: 'Name / description', placeholder: 'Search by title or description' },
+  { value: 'name', label: 'Name / description', placeholder: 'Search by name or description...' },
   { value: 'organization', label: 'Organization', placeholder: 'Org name' },
   { value: 'start_date', label: 'Start date', placeholder: 'On or after date' },
   { value: 'tag', label: 'Tag', placeholder: 'Comma separated tags' },
@@ -187,9 +187,17 @@ const dateOperators: { value: DateOperator; label: string }[] = [
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'Date not set';
-  const date = new Date(value);
+  const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dateOnlyMatch
+    ? new Date(Date.UTC(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3])))
+    : new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
 };
 
 const goToPage = (target: number) => {
@@ -259,18 +267,70 @@ const closeModal = () => {
 
       <div class="flex flex-col gap-3">
         <div
-          v-for="filter in filters"
+          v-for="(filter, index) in filters"
           :key="filter.id"
           class="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3"
         >
           <div
-            :class="filter.field === 'start_date' ? 'grid w-full grid-cols-[2fr,1fr,1fr] items-center gap-2' : 'grid w-full grid-cols-[3fr,1fr] items-center gap-2'"
+            :class="filter.field === 'start_date' ? 'grid w-full grid-cols-1 items-center gap-2 sm:grid-cols-[2fr_1fr_1fr]' : 'grid w-full grid-cols-1 items-center gap-2 sm:grid-cols-[3fr_1fr]'"
           >
+            <div class="flex flex-col gap-1 text-sm font-medium text-slate-100">
+              <span class="sr-only">Value</span>
+              <template v-if="filter.field === 'start_date'">
+                <Input
+                  v-model.lazy="(filter.value as string | number)"
+                  type="date"
+                  class="bg-slate-950/60! text-white focus-visible:ring-orange-300"
+                />
+              </template>
+              <template v-else-if="filter.field === 'organization'">
+                <VueSelect
+                  v-model="filter.value"
+                  :options="organizationOptions"
+                  placeholder="Select organization"
+                  class="bg-slate-950/60 border-input text-white rounded-md"
+                  @update:modelValue="(val: any) => updateFilterValue(filter.id, val, true)"
+                />
+              </template>
+              <template v-else-if="filter.field === 'tag'">
+                <VueSelect
+                  v-model="filter.value"
+                  :options="tagOptions"
+                  placeholder="Select tag"
+                  class="bg-slate-950/60 border-input text-white rounded-md"
+                  @update:modelValue="(val) => updateFilterValue(filter.id, val, true)"
+                />
+              </template>
+              <template v-else>
+                <Input
+                  v-model="(filter.value as string | number)"
+                  :placeholder="fieldOptions.find((opt: any) => opt.value === filter.field)?.placeholder || 'Search...'"
+                  class="bg-slate-950/60! border-input text-white focus-visible:ring-orange-300"
+                />
+              </template>
+            </div>
+
+             <div v-if="filter.field === 'start_date'" class="flex flex-col gap-1 text-sm font-medium text-slate-100">
+              <span class="sr-only">Date comparison</span>
+              <select
+                v-model="filter.operator"
+                class="rounded-md border border-input bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
+              >
+                <option
+                  v-for="op in dateOperators"
+                  :key="op.value"
+                  :value="op.value"
+                >
+                  {{ op.label }}
+                </option>
+              </select>
+            </div>
+
             <div class="flex flex-col gap-1 text-sm font-medium text-slate-100">
               <span class="sr-only">Field</span>
               <select
                 v-model="filter.field"
-                class="rounded-md border border-white/20 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
+                class="rounded-md border border-input bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
                 @change="updateFilterField(filter.id, filter.field)"
               >
                 <option disabled value="">Search by...</option>
@@ -284,60 +344,10 @@ const closeModal = () => {
               </select>
             </div>
 
-            <div v-if="filter.field === 'start_date'" class="flex flex-col gap-1 text-sm font-medium text-slate-100">
-              <span class="sr-only">Date comparison</span>
-              <select
-                v-model="filter.operator"
-                class="rounded-md border border-white/20 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none ring-0 focus:border-orange-300 focus:bg-slate-900 focus:outline-none"
-              >
-                <option
-                  v-for="op in dateOperators"
-                  :key="op.value"
-                  :value="op.value"
-                >
-                  {{ op.label }}
-                </option>
-              </select>
-            </div>
-
-            <div class="flex flex-col gap-1 text-sm font-medium text-slate-100">
-              <span class="sr-only">Value</span>
-              <template v-if="filter.field === 'start_date'">
-                <Input
-                  v-model.lazy="(filter.value as string | number)"
-                  type="date"
-                  class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
-                />
-              </template>
-              <template v-else-if="filter.field === 'organization'">
-                <VueSelect
-                  v-model="filter.value"
-                  :options="organizationOptions"
-                  placeholder="Select organization"
-                  class="bg-slate-950/60 text-white"
-                  @update:modelValue="(val: any) => updateFilterValue(filter.id, val, true)"
-                />
-              </template>
-              <template v-else-if="filter.field === 'tag'">
-                <VueSelect
-                  v-model="filter.value"
-                  :options="tagOptions"
-                  placeholder="Select tag"
-                  class="bg-slate-950/60 text-white"
-                  @update:modelValue="(val) => updateFilterValue(filter.id, val, true)"
-                />
-              </template>
-              <template v-else>
-                <Input
-                  v-model="(filter.value as string | number)"
-                  :placeholder="fieldOptions.find((opt: any) => opt.value === filter.field)?.placeholder || 'Search...'"
-                  class="bg-slate-950/60 text-white focus-visible:ring-orange-300"
-                />
-              </template>
-            </div>
           </div>
           <div class="flex justify-end">
             <Button
+              v-if="index > 0"
               size="sm"
               variant="ghost"
               class="text-slate-200 hover:bg-white/10 hover:text-white"
