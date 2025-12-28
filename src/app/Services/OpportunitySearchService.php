@@ -69,7 +69,7 @@ class OpportunitySearchService
                     }
                     break;
                 case 'start_date':
-                    $startDate = Carbon::parse($value);
+                    $startDate = Carbon::parse($value, 'UTC')->startOfDay();
                     $startDateOperator = $this->normalizeOperator($filter['operator'] ?? 'eq');
                     break;
             }
