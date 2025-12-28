@@ -89,7 +89,9 @@ class Opportunity extends Model implements Auditable
             'id' => (string) $this->getKey(),
             'name' => $this->name,
             'description' => $this->description,
-            'start_date_ts' => $this->start_date ? Carbon::parse($this->start_date)->timestamp : null,
+            'start_date_ts' => $this->start_date
+                ? Carbon::parse($this->start_date, 'UTC')->startOfDay()->timestamp
+                : null,
             'created_at_ts' => $this->created_at->timestamp,
             'organization_names' => $this->organizations?->pluck('name')->filter()->values()->all() ?? [],
             'tag_names' => $this->tags?->pluck('name')->filter()->values()->all() ?? [],
@@ -108,7 +110,7 @@ class Opportunity extends Model implements Auditable
                 ['name' => 'created_at_ts', 'type' => 'int64', 'optional' => false],
                 ['name' => 'organization_names', 'type' => 'string[]', 'optional' => true],
                 ['name' => 'tag_names', 'type' => 'string[]', 'optional' => true],
-                [ 'name' => '__soft_deleted','type' => 'int32', 'optional' => true],
+                ['name' => '__soft_deleted','type' => 'int32', 'optional' => true],
             ],
             'default_sorting_field' => 'created_at_ts',
         ];
