@@ -48,7 +48,8 @@
 # /.vscode/tsconfig.playwright.app.json
 /.zed
 /auth.json
-/certs
+/certs/*
+!/certs/.gitkeep
 /node_modules
 /infrastructure/cdk/node_modules
 /infrastructure/cdk/bin
