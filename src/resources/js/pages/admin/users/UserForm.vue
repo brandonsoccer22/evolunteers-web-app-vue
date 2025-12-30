@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import Button from '@/components/ui/button/Button.vue';
@@ -17,7 +17,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import users from '@/routes/admin/users';
 import userOrganizations from '@/routes/admin/users/organizations';
 import type { BreadcrumbItem, Organization, User } from '@/types';
-import { usePage } from '@inertiajs/vue3';
 
 const props = defineProps<{
     data?: {
@@ -97,10 +96,25 @@ watch(
 
 const saving = ref(false);
 const statusMessage = ref<string | null>(null);
+const validationErrors = ref<Record<string, string[] | string>>({});
+const sessionErrors = computed<Record<string, string[] | string>>(() => (page.props.errors ?? {}) as Record<string, string[] | string>);
+const errorMessages = computed(() => {
+    const combined = { ...sessionErrors.value, ...validationErrors.value };
+    const messages: string[] = [];
+    Object.values(combined).forEach((value) => {
+        if (Array.isArray(value)) {
+            messages.push(...value);
+        } else if (typeof value === 'string') {
+            messages.push(value);
+        }
+    });
+    return messages;
+});
 
 const submit = async () => {
     saving.value = true;
     statusMessage.value = null;
+    validationErrors.value = {};
     try {
         const payload: Partial<UserFormState> = {
             first_name: form.value.first_name,
@@ -135,11 +149,13 @@ const submit = async () => {
 
         statusMessage.value = 'User saved';
     } catch (error) {
-        if (error instanceof Error) {
-            statusMessage.value = error.message;
-        } else {
-            statusMessage.value = 'Unable to save user right now.';
+        const response = (error as { response?: { status?: number; data?: { errors?: Record<string, string[]>; message?: string } } })?.response;
+        if (response?.status === 422) {
+            validationErrors.value = response.data?.errors ?? {};
+            statusMessage.value = response.data?.message ?? 'Please fix the highlighted errors.';
+            return;
         }
+        statusMessage.value = error instanceof Error ? error.message : 'Unable to save user right now.';
     } finally {
         saving.value = false;
     }
@@ -307,9 +323,16 @@ const canEditRoles = computed(() => {
             </Button>
             <span class="text-sm text-muted-foreground">
               <span v-if="isLoadingUser">Loading user...</span>
-              <span v-else-if="statusMessage">{{ statusMessage }}</span>
+              <span v-else-if="statusMessage && statusMessage != errorMessages[0]">{{ statusMessage }}</span>
             </span>
           </CardFooter>
+          <CardContent v-if="errorMessages.length" class="pt-0">
+            <div class="space-y-1 text-sm text-destructive">
+              <p v-for="(message, index) in errorMessages" :key="index">
+                {{ message }}
+              </p>
+            </div>
+          </CardContent>
         </Card>
 
         <Card>

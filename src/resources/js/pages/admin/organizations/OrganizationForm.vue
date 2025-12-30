@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { useQuery } from '@tanstack/vue-query';
 import { computed, ref, watch } from 'vue';
 
@@ -29,9 +29,14 @@ const props = defineProps<{
 }>();
 
 const axios = useAxios();
+const page = usePage();
 const initialOrganization = computed<OrganizationWithUsers | null>(() => props.data?.organization ?? null);
 const currentOrganizationId = ref<number | null>(initialOrganization.value?.id ?? null);
 const isEdit = computed(() => currentOrganizationId.value !== null);
+const isAdmin = computed(() => {
+    const roles = (page.props.auth as { roles?: string[] } | undefined)?.roles ?? [];
+    return Array.isArray(roles) && roles.includes('Admin');
+});
 
 interface OrganizationFormState {
     name: string;
@@ -89,10 +94,25 @@ watch(
 
 const saving = ref(false);
 const statusMessage = ref<string | null>(null);
+const validationErrors = ref<Record<string, string[] | string>>({});
+const sessionErrors = computed<Record<string, string[] | string>>(() => (page.props.errors ?? {}) as Record<string, string[] | string>);
+const errorMessages = computed(() => {
+    const combined = { ...sessionErrors.value, ...validationErrors.value };
+    const messages: string[] = [];
+    Object.values(combined).forEach((value) => {
+        if (Array.isArray(value)) {
+            messages.push(...value);
+        } else if (typeof value === 'string') {
+            messages.push(value);
+        }
+    });
+    return messages;
+});
 
 const submit = async () => {
     saving.value = true;
     statusMessage.value = null;
+    validationErrors.value = {};
     try {
         const payload = {
             name: form.value.name,
@@ -121,11 +141,13 @@ const submit = async () => {
 
         statusMessage.value = 'Organization saved';
     } catch (error) {
-        if (error instanceof Error) {
-            statusMessage.value = error.message;
-        } else {
-            statusMessage.value = 'Unable to save organization right now.';
+        const response = (error as { response?: { status?: number; data?: { errors?: Record<string, string[]>; message?: string } } })?.response;
+        if (response?.status === 422) {
+            validationErrors.value = response.data?.errors ?? {};
+            statusMessage.value = response.data?.message ?? 'Please fix the highlighted errors.';
+            return;
         }
+        statusMessage.value = error instanceof Error ? error.message : 'Unable to save organization right now.';
     } finally {
         saving.value = false;
     }
@@ -205,7 +227,9 @@ const detachUser = async (userId: number) => {
                 <form @submit.prevent="submit">
                     <CardHeader>
                         <CardTitle>Organization details</CardTitle>
-                        <p class="text-sm text-muted-foreground">Name, description, and members.</p>
+                        <p class="text-sm text-muted-foreground">
+                            {{ isAdmin ? 'Name, description, and members.' : 'Name and description.' }}
+                        </p>
                     </CardHeader>
 
                     <CardContent class="space-y-4">
@@ -225,7 +249,7 @@ const detachUser = async (userId: number) => {
                             </div>
                         </div>
 
-                        <div class="space-y-3 rounded-lg border border-border/70 p-4">
+                        <div v-if="isAdmin" class="space-y-3 rounded-lg border border-border/70 p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
                                     <p class="text-sm font-semibold">Members</p>
@@ -275,7 +299,7 @@ const detachUser = async (userId: number) => {
                     <CardFooter class="flex items-center justify-between gap-3">
                         <div class="text-sm text-muted-foreground">
                             <span v-if="isLoadingOrganization">Loading organization...</span>
-                            <span v-else-if="statusMessage">{{ statusMessage }}</span>
+                            <span v-else-if="statusMessage && statusMessage != errorMessages[0]">{{ statusMessage }}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <Button type="submit" class="mt-2" :disabled="saving">
@@ -283,6 +307,13 @@ const detachUser = async (userId: number) => {
                             </Button>
                         </div>
                     </CardFooter>
+                    <CardContent v-if="errorMessages.length" class="pt-0">
+                        <div class="space-y-1 text-sm text-destructive">
+                            <p v-for="(message, index) in errorMessages" :key="index">
+                                {{ message }}
+                            </p>
+                        </div>
+                    </CardContent>
                 </form>
             </Card>
         </div>

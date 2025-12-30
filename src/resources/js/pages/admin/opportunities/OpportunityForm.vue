@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import Button from '@/components/ui/button/Button.vue';
@@ -26,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const axios = useAxios();
+const page = usePage();
 const initialOpportunity = computed<Opportunity | null>(() => props.data?.opportunity ?? null);
 const currentOpportunityId = ref<number | null>(initialOpportunity.value?.id ?? null);
 const isEdit = computed(() => currentOpportunityId.value !== null);
@@ -103,10 +104,25 @@ watch(
 
 const saving = ref(false);
 const statusMessage = ref<string | null>(null);
+const validationErrors = ref<Record<string, string[] | string>>({});
+const sessionErrors = computed<Record<string, string[] | string>>(() => (page.props.errors ?? {}) as Record<string, string[] | string>);
+const errorMessages = computed(() => {
+    const combined = { ...sessionErrors.value, ...validationErrors.value };
+    const messages: string[] = [];
+    Object.values(combined).forEach((value) => {
+        if (Array.isArray(value)) {
+            messages.push(...value);
+        } else if (typeof value === 'string') {
+            messages.push(value);
+        }
+    });
+    return messages;
+});
 
 const submit = async () => {
     saving.value = true;
     statusMessage.value = null;
+    validationErrors.value = {};
     try {
         const payload = {
             name: form.value.name,
@@ -141,11 +157,13 @@ const submit = async () => {
 
         statusMessage.value = 'Opportunity saved';
     } catch (error) {
-        if (error instanceof Error) {
-            statusMessage.value = error.message;
-        } else {
-            statusMessage.value = 'Unable to save opportunity right now.';
+        const response = (error as { response?: { status?: number; data?: { errors?: Record<string, string[]>; message?: string } } })?.response;
+        if (response?.status === 422) {
+            validationErrors.value = response.data?.errors ?? {};
+            statusMessage.value = response.data?.message ?? 'Please fix the highlighted errors.';
+            return;
         }
+        statusMessage.value = error instanceof Error ? error.message : 'Unable to save opportunity right now.';
     } finally {
         saving.value = false;
     }
@@ -357,51 +375,14 @@ const saveTag = async (name: string, action: 'add' | 'remove') => {
           </Button>
           <span class="text-sm text-muted-foreground">
             <span v-if="isLoadingOpportunity">Loading opportunity...</span>
-            <span v-else-if="statusMessage">{{ statusMessage }}</span>
+            <span v-else-if="statusMessage && statusMessage != errorMessages[0]">{{ statusMessage }}</span>
           </span>
         </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tags</CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-3">
-          <div class="flex gap-2">
-            <Input
-              v-model="tagInput"
-              placeholder="Add a tag and press enter or add"
-              @keyup.enter.prevent="addTag"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              @click="addTag"
-            >
-              Add
-            </Button>
-          </div>
-          <div
-            v-if="!tags.length"
-            class="text-sm text-muted-foreground"
-          >
-            No tags yet.
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="tag in tags"
-              :key="tag.name"
-              class="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm"
-            >
-              {{ tag.name }}
-              <button
-                class="text-xs text-muted-foreground hover:text-destructive"
-                type="button"
-                @click="removeTag(tag.name)"
-              >
-                ✕
-              </button>
-            </span>
+        <CardContent v-if="errorMessages.length" class="pt-0">
+          <div class="space-y-1 text-sm text-destructive">
+            <p v-for="(message, index) in errorMessages" :key="index">
+              {{ message }}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -483,6 +464,51 @@ const saveTag = async (name: string, action: 'add' | 'remove') => {
           </div>
         </CardContent>
       </Card>
+
+<Card>
+        <CardHeader>
+          <CardTitle>Tags</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-3">
+          <div class="flex gap-2">
+            <Input
+              v-model="tagInput"
+              placeholder="Add a tag and press enter or add"
+              @keyup.enter.prevent="addTag"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              @click="addTag"
+            >
+              Add
+            </Button>
+          </div>
+          <div
+            v-if="!tags.length"
+            class="text-sm text-muted-foreground"
+          >
+            No tags yet.
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span
+              v-for="tag in tags"
+              :key="tag.name"
+              class="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm"
+            >
+              {{ tag.name }}
+              <button
+                class="text-xs text-muted-foreground hover:text-destructive"
+                type="button"
+                @click="removeTag(tag.name)"
+              >
+                ✕
+              </button>
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
   </AppLayout>
 </template>
