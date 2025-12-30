@@ -7,26 +7,26 @@ Regular users can search for all opportunities across organization (with read on
 
 ## Installation
 
-`brew install mkcert`
-`mkcert -install`
-`mkcert localhost` #Add certs to /certs in the project root
-`docker compose build composer`
-`docker compose run --rm composer install`
-`docker compose run --rm npm install`
-
-## Installing
+Ensure Docker is installed.
 
 Ensure task is installed: `brew install go-task/tap/go-task`
 
+(duplicate copy commands are intentional)
+
+`brew install mkcert`
+`mkcert -install`
+`cd certs && mkcert localhost && cd ..`
+`cp src/.env.example src/.env`
+`cp src/.env src/.env.docker`
+`cp src/.env src/.env.testing`
 `task build`
 `task composer -- install`
-`cp src/.env.example src/.env`
-`php artisan key:generate`
+`php src/artisan key:generate`
 `cp src/.env src/.env.docker`
 `cp src/.env src/.env.testing`
 `task artisan -- migrate`
-`php artisan user:create-test --email=test@example.com --password=your_password`
-`php artisan  db:seed-with-options --organizations=5 --opportunities=10`
+`task artisan -- user:create-test --email=test_user@example.com --password=your_password`
+`task artisan -- db:seed-with-options --organizations=5 --opportunities=10`
 `cd src && npm install`
 `npm run build-dev`
 
@@ -43,7 +43,6 @@ Ensure task is installed: `brew install go-task/tap/go-task`
 ### Shell into the PHP container
 
 `task sh`
-
 
 ### Run Pest tests
 
