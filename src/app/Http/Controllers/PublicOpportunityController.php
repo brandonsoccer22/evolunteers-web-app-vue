@@ -9,7 +9,7 @@ use App\Http\Controllers\ApiController;
 use App\Http\Resources\TagResource;
 use App\Models\Tag;
 
-class PublicOpportunityController extends Controller
+class PublicOpportunityController extends ApiController
 {
     public function __construct(protected OpportunitySearchService $searchService)
     {
@@ -24,7 +24,7 @@ class PublicOpportunityController extends Controller
 
         $results = $this->searchService->search($filters, $perPage, $page);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return response()->json($results);
         }
 

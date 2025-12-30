@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\UserUpsertRequest;
 use App\Http\Resources\UserResource;
@@ -17,14 +16,14 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use App\Mail\UserPasswordResetMail;
 
-class AdminUserController extends Controller
+class AdminUserController extends ApiController
 {
     public function index(Request $request)
     {
         $users = User::with(['organizations', 'roles'])->get();
         $resource = UserResource::collection($users);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -35,7 +34,7 @@ class AdminUserController extends Controller
 
     public function createForm(Request $request)
     {
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::error('Use POST /admin/users to create.', 405);
         }
 
@@ -50,7 +49,7 @@ class AdminUserController extends Controller
 
         $resource = new UserResource($user);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -98,7 +97,7 @@ class AdminUserController extends Controller
 
         $resource = new UserResource($user->load(['organizations', 'roles']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -131,7 +130,7 @@ class AdminUserController extends Controller
 
         $resource = new UserResource($user->load(['organizations', 'roles']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -143,7 +142,7 @@ class AdminUserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::success('User deleted.');
         }
 
@@ -159,7 +158,7 @@ class AdminUserController extends Controller
 
         $resource = new UserResource($user->load('organizations'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -175,7 +174,7 @@ class AdminUserController extends Controller
 
         $resource = new UserResource($user->load('organizations'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 

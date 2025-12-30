@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\ApiController;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\OrganizationUpsertRequest;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Responses\ApiResponse;
@@ -13,7 +12,7 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 
-class AdminOrganizationController extends Controller
+class AdminOrganizationController extends ApiController
 {
     public function index(Request $request)
     {
@@ -31,7 +30,7 @@ class AdminOrganizationController extends Controller
         $organizations = $query->orderBy('name')->limit(50)->get();
         $resource = OrganizationResource::collection($organizations);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -46,7 +45,7 @@ class AdminOrganizationController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::error('Use POST /admin/organizations to create.', 405);
         }
 
@@ -61,7 +60,7 @@ class AdminOrganizationController extends Controller
         $this->ensureCanAccessOrganization($request->user(), $organization);
         $resource = new OrganizationResource($organization);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -88,7 +87,7 @@ class AdminOrganizationController extends Controller
 
         $resource = new OrganizationResource($organization->load('users'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -119,7 +118,7 @@ class AdminOrganizationController extends Controller
 
         $resource = new OrganizationResource($organization->load('users'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -135,7 +134,7 @@ class AdminOrganizationController extends Controller
         $organization = Organization::findOrFail($id);
         $organization->delete();
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::success('Organization deleted.');
         }
 
@@ -155,7 +154,7 @@ class AdminOrganizationController extends Controller
 
         $resource = new OrganizationResource($organization->load('users'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -175,7 +174,7 @@ class AdminOrganizationController extends Controller
 
         $resource = new OrganizationResource($organization->load('users'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 

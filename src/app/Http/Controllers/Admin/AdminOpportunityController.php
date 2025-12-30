@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\ApiController;
 use App\Http\Requests\OpportunityUpsertRequest;
 use App\Models\Opportunity;
@@ -14,12 +13,12 @@ use App\Http\Resources\OpportunityResource;
 use App\Http\Responses\ApiResponse;
 use App\Http\Responses\BrowserResponse;
 
-class AdminOpportunityController extends Controller
+class AdminOpportunityController extends ApiController
 {
 
     public function showCreate(Request $request)
     {
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::error('Use POST /opportunities to create.', 405);
         }
 
@@ -45,7 +44,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
         return redirect()->route('admin.opportunities.show', ['opportunity' => $opportunity])->with('success', 'Opportunity created.');
@@ -55,7 +54,7 @@ class AdminOpportunityController extends Controller
     // {
     //     $opportunity = Opportunity::findOrFail($id);
     //     $resource = new OpportunityResource($opportunity);
-    //     if (ApiController::isApiRequest($request)) {
+    //     if (static::isApiRequest($request)) {
     //         return ApiResponse::error('Use PUT/PATCH /opportunities/{id} to update.', 405);
     //     }
     //     return BrowserResponse::render('Opportunities/Edit', [
@@ -84,7 +83,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
         return redirect()
@@ -98,7 +97,7 @@ class AdminOpportunityController extends Controller
         $this->assertOpportunityAccess($request->user(), $opportunity);
         $opportunity->delete();
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::success('Opportunity deleted.');
         }
 
@@ -136,7 +135,7 @@ class AdminOpportunityController extends Controller
         $resource = OpportunityResource::collection($opportunities);
         $resourceResponse = $resource->response()->getData(true);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return response()->json($resourceResponse);
         }
 
@@ -153,7 +152,7 @@ class AdminOpportunityController extends Controller
         $this->assertOpportunityAccess($request->user(), $opportunity);
         $resource = new OpportunityResource($opportunity);
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -171,7 +170,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load('organizations'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -187,7 +186,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load('organizations'));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -207,7 +206,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 
@@ -229,7 +228,7 @@ class AdminOpportunityController extends Controller
 
         $resource = new OpportunityResource($opportunity->load(['organizations', 'tags']));
 
-        if (ApiController::isApiRequest($request)) {
+        if (static::isApiRequest($request)) {
             return ApiResponse::model($resource);
         }
 

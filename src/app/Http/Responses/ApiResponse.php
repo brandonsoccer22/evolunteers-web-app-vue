@@ -15,7 +15,7 @@ class ApiResponse
         static::beforeResponse();
 
         return response()->json([
-            'data' => $resource,
+            'data' => $resource->resolve(),
             'meta' => $meta,
         ]);
     }
