@@ -13,22 +13,22 @@ Ensure task is installed: `brew install go-task/tap/go-task`
 
 (duplicate copy commands are intentional)
 
-`brew install mkcert`
-`mkcert -install`
-`cd certs && mkcert localhost && cd ..`
-`cp src/.env.example src/.env`
-`cp src/.env src/.env.docker`
-`cp src/.env src/.env.testing`
-`task build`
-`task composer -- install`
-`php src/artisan key:generate`
-`cp src/.env src/.env.docker`
-`cp src/.env src/.env.testing`
-`task artisan -- migrate`
-`task artisan -- user:create-test --email=test_user@example.com --password=your_password`
-`task artisan -- db:seed-with-options --organizations=5 --opportunities=10`
-`cd src && npm install`
-`npm run build-dev`
+- `brew install mkcert`
+- `mkcert -install`
+- `cd certs && mkcert localhost && cd ..`
+- `cp src/.env.example src/.env`
+- `cp src/.env src/.env.docker`
+- `cp src/.env src/.env.testing`
+- `task build`
+- `task composer -- install`
+- `php src/artisan key:generate`
+- `cp src/.env src/.env.docker`
+- `cp src/.env src/.env.testing`
+- `task artisan -- migrate`
+- `task artisan -- user:create-test --email=test_user@example.com --password=your_password`
+- `task artisan -- db:seed-with-options --organizations=5 --opportunities=10`
+- `cd src && npm install`
+- `npm run build-dev`
 
 ## Running the application locally
 
@@ -46,11 +46,7 @@ Ensure task is installed: `brew install go-task/tap/go-task`
 
 ### Run Pest tests
 
-task test
-
-## Test User
-
-Run `php artisan user:create-test`
+task pest
 
 ## Bruno
 
