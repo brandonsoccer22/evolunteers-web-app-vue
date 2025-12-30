@@ -63,6 +63,11 @@ tasks:
     cmds:
       - docker compose run --rm composer update {{.CLI_ARGS}}
 
+  npm:
+    desc: Run npm install in the npm container
+    cmds:
+      - docker compose run --rm npm {{.CLI_ARGS}}
+
   npm-install:
     desc: Run npm install in the npm container
     cmds:
