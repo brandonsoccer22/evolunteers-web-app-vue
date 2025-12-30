@@ -38,9 +38,6 @@ Route::name('api.')->group(function () {
         Route::delete('{opportunity}/tags', [AdminOpportunityController::class, 'removeTag'])
             ->middleware(['auth','verified'])
             ->name('tags.remove');
-        // Route::get('{opportunity}/edit', [AdminOpportunityController::class, 'showEdit'])
-        //     ->middleware(['auth','verified'])
-        //     ->name('showEdit');
         Route::patch('{opportunity}', [AdminOpportunityController::class, 'update'])
             ->middleware(['auth','verified'])
             ->name('update');
