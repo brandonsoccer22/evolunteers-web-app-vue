@@ -54,6 +54,7 @@
 /infrastructure/cdk/node_modules
 /infrastructure/cdk/bin
 /infrastructure/cdk/cdk.out
+/infrastructure/cdk/cdk.context.json
 Homestead.json
 Homestead.yaml
 Thumbs.db
