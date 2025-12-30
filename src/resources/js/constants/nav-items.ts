@@ -6,12 +6,12 @@ import { type NavItem } from '@/types';
 import { Building2, HandHeart, LayoutGrid, Users } from 'lucide-vue-next';
 
 export const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-        allowedRoles: ['Admin', 'Organization Manager'],
-    },
+    // {
+    //     title: 'Dashboard',
+    //     href: dashboard(),
+    //     icon: LayoutGrid,
+    //     allowedRoles: ['Admin', 'Organization Manager'],
+    // },
     {
         title: 'Opportunities',
         href: opportunities.index().url,
