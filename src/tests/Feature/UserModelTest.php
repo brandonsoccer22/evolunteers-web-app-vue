@@ -1,87 +1,79 @@
 <?php
 
-namespace Tests\Feature;
-
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Role;
 use App\Models\Opportunity;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-class UserModelTest extends TestCase
-{
-    use RefreshDatabase;
+uses(TestCase::class, RefreshDatabase::class);
 
-    public function test_can_create_user()
-    {
-        $user = User::factory()->create(['first_name' => 'Test','last_name'=>'User']);
-        $this->assertDatabaseHas('users', ['first_name' => 'Test','last_name'=>'User']);
-        $this->assertDatabaseHas('users', ['name' => 'Test User']);
-    }
+test('can create user', function (): void {
+    User::factory()->create(['first_name' => 'Test', 'last_name' => 'User']);
 
-    public function test_can_update_user()
-    {
-        $user = User::factory()->create();
-        $user->update(['first_name' => 'Updated','last_name'=>'User']);
-        $this->assertDatabaseHas('users', ['first_name' => 'Updated','last_name'=>'User']);
-        $this->assertDatabaseHas('users', ['name' => 'Updated User']);
-    }
+    $this->assertDatabaseHas('users', ['first_name' => 'Test', 'last_name' => 'User']);
+    $this->assertDatabaseHas('users', ['name' => 'Test User']);
+});
 
-    public function test_can_soft_delete_user()
-    {
-        $user = User::factory()->create();
-        $user->delete();
-        $this->assertSoftDeleted($user);
-    }
+test('can update user', function (): void {
+    $user = User::factory()->create();
+    $user->update(['first_name' => 'Updated', 'last_name' => 'User']);
 
-    public function test_user_can_have_roles()
-    {
-        $user = User::factory()->create();
-        $role = Role::factory()->create();
-        $user->roles()->attach($role);
-        $this->assertTrue($user->roles->contains($role));
-    }
+    $this->assertDatabaseHas('users', ['first_name' => 'Updated', 'last_name' => 'User']);
+    $this->assertDatabaseHas('users', ['name' => 'Updated User']);
+});
 
-    public function test_user_can_join_opportunity()
-    {
-        $user = User::factory()->create();
-        $opp = Opportunity::factory()->create();
-        $user->opportunities()->attach($opp);
-        $this->assertTrue($user->opportunities->contains($opp));
-        $this->assertTrue($opp->users->contains($user));
-    }
+test('can soft delete user', function (): void {
+    $user = User::factory()->create();
+    $user->delete();
 
-    public function test_created_by_is_set_on_create()
-    {
-        $admin = User::factory()->create();
-        $this->actingAs($admin);
+    $this->assertSoftDeleted($user);
+});
 
-        $user = User::factory()->create();
+test('user can have roles', function (): void {
+    $user = User::factory()->create();
+    $role = Role::factory()->create();
+    $user->roles()->attach($role);
 
-        $this->assertEquals($admin->id, $user->created_by);
-    }
+    $this->assertTrue($user->roles->contains($role));
+});
 
-    public function test_updated_by_is_set_on_update()
-    {
-        $admin = User::factory()->create();
-        $this->actingAs($admin);
+test('user can join opportunity', function (): void {
+    $user = User::factory()->create();
+    $opp = Opportunity::factory()->create();
+    $user->opportunities()->attach($opp);
 
-        $user = User::factory()->create();
-        $user->update(['first_name' => 'Changed']);
+    $this->assertTrue($user->opportunities->contains($opp));
+    $this->assertTrue($opp->users->contains($user));
+});
 
-        $user->refresh();
-        $this->assertEquals($admin->id, $user->updated_by);
-    }
+test('created by is set on create', function (): void {
+    $admin = User::factory()->create();
+    $this->actingAs($admin);
 
-    public function test_deleted_by_is_set_on_delete()
-    {
-        $admin = User::factory()->create();
-        $this->actingAs($admin);
+    $user = User::factory()->create();
 
-        $user = User::factory()->create();
-        $user->delete();
+    $this->assertEquals($admin->id, $user->created_by);
+});
 
-        $user = User::withTrashed()->find($user->id);
-        $this->assertEquals($admin->id, $user->deleted_by);
-    }
-}
+test('updated by is set on update', function (): void {
+    $admin = User::factory()->create();
+    $this->actingAs($admin);
+
+    $user = User::factory()->create();
+    $user->update(['first_name' => 'Changed']);
+
+    $user->refresh();
+    $this->assertEquals($admin->id, $user->updated_by);
+});
+
+test('deleted by is set on delete', function (): void {
+    $admin = User::factory()->create();
+    $this->actingAs($admin);
+
+    $user = User::factory()->create();
+    $user->delete();
+
+    $user = User::withTrashed()->find($user->id);
+    $this->assertEquals($admin->id, $user->deleted_by);
+});

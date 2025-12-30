@@ -113,10 +113,10 @@ tasks:
     cmds:
       - docker compose exec php sh
 
-  phpunit:
-    desc: Run PHPUnit tests in the php container
+  pest:
+    desc: Run Pest tests in the php container
     cmds:
-      - docker compose exec php php /var/www/html/vendor/bin/phpunit --configuration /var/www/html/phpunit.xml {{.CLI_ARGS}}
+      - task artisan -- test {{.CLI_ARGS}}
 
   wayfinder:
     desc: Generate Wayfinder routes in the php container
@@ -146,7 +146,7 @@ tasks:
       PLATFORM: "{{.PLATFORM | default \"linux/arm64\"}}"
     cmds:
       - docker buildx build --platform {{.PLATFORM}} --load -f dockerfiles/app.prod.dockerfile -t {{.IMAGE}}:{{.TAG}} -t {{.IMAGE}}:latest .
-  
+
   docker-build-prod-no-cache:
     desc: Build production image without cache
     vars:

@@ -1,165 +1,157 @@
 <?php
 
-namespace Tests\Feature;
-
-use Tests\TestCase;
+use App\Models\File;
 use App\Models\Opportunity;
 use App\Models\Organization;
 use App\Models\Tag;
-use App\Models\File;
 use App\Models\Taggable;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
-class OpportunityTest extends TestCase
-{
-    use RefreshDatabase;
+uses(TestCase::class, RefreshDatabase::class);
 
-    public function test_can_create_opportunity()
-    {
-        $opp = Opportunity::factory()->create(['name' => 'Test Opportunity']);
-        $this->assertDatabaseHas('opportunities', ['name' => 'Test Opportunity']);
-    }
+test('can create opportunity', function (): void {
+    Opportunity::factory()->create(['name' => 'Test Opportunity']);
 
-    public function test_can_read_opportunity()
-    {
-        $opp = Opportunity::factory()->create();
-        $found = Opportunity::find($opp->id);
-        $this->assertNotNull($found);
-        $this->assertEquals($opp->id, $found->id);
-    }
+    $this->assertDatabaseHas('opportunities', ['name' => 'Test Opportunity']);
+});
 
-    public function test_can_update_opportunity()
-    {
-        $opp = Opportunity::factory()->create();
-        $opp->update(['name' => 'Updated Opportunity']);
-        $this->assertDatabaseHas('opportunities', ['name' => 'Updated Opportunity']);
-    }
+test('can read opportunity', function (): void {
+    $opp = Opportunity::factory()->create();
+    $found = Opportunity::find($opp->id);
 
-    public function test_can_soft_delete_opportunity()
-    {
-        $opp = Opportunity::factory()->create();
-        $opp->delete();
-        $this->assertSoftDeleted($opp);
-    }
+    $this->assertNotNull($found);
+    $this->assertEquals($opp->id, $found->id);
+});
 
-    public function test_opportunity_can_be_linked_to_organization()
-    {
-        $opp = Opportunity::factory()->create();
-        $org = Organization::factory()->create();
-        $opp->organizations()->attach($org);
-        $this->assertTrue($opp->organizations->contains($org));
-    }
+test('can update opportunity', function (): void {
+    $opp = Opportunity::factory()->create();
+    $opp->update(['name' => 'Updated Opportunity']);
 
-    public function test_opportunity_can_be_tagged()
-    {
-        $opp = Opportunity::factory()->create();
-        $tag = Tag::factory()->create();
-        $opp->tags()->attach($tag);
-        $this->assertTrue($opp->tags->contains($tag));
-    }
+    $this->assertDatabaseHas('opportunities', ['name' => 'Updated Opportunity']);
+});
 
-    public function test_opportunity_can_have_files()
-    {
-        $opp = Opportunity::factory()->create();
-        $file = File::factory()->create();
-        $opp->files()->attach($file);
-        $this->assertTrue($opp->files->contains($file));
-    }
+test('can soft delete opportunity', function (): void {
+    $opp = Opportunity::factory()->create();
+    $opp->delete();
 
-    public function test_opportunity_can_sync_tags()
-    {
-        $opp = Opportunity::factory()->create();
-        $tags = Tag::factory()->count(3)->create();
-        $opp->tags()->sync($tags->pluck('id')->toArray());
-        $this->assertCount(3, $opp->tags);
-    }
+    $this->assertSoftDeleted($opp);
+});
 
-    public function test_opportunity_can_detach_a_tag()
-    {
-        $opp = Opportunity::factory()->create();
-        $tag = Tag::factory()->create();
-        $opp->attachTag($tag);
-        $opp->tags()->detach($tag);
-        $opp->refresh();
-        $this->assertFalse($opp->tags->contains($tag));
-    }
+test('opportunity can be linked to organization', function (): void {
+    $opp = Opportunity::factory()->create();
+    $org = Organization::factory()->create();
+    $opp->organizations()->attach($org);
 
-    public function test_opportunity_can_restore_soft_deleted_tag_pivot()
-    {
-        $opp = Opportunity::factory()->create();
-        $tag = Tag::factory()->create();
-        $now = now();
+    $this->assertTrue($opp->organizations->contains($org));
+});
 
-        DB::table('taggables')->insert([
-            'tag_id' => $tag->id,
-            'taggable_id' => $opp->id,
-            'taggable_type' => Opportunity::class,
-            'created_at' => $now,
-            'updated_at' => $now,
-            'deleted_at' => $now,
-        ]);
+test('opportunity can be tagged', function (): void {
+    $opp = Opportunity::factory()->create();
+    $tag = Tag::factory()->create();
+    $opp->tags()->attach($tag);
 
-        $opp->attachTag($tag);
+    $this->assertTrue($opp->tags->contains($tag));
+});
 
-        $this->assertTrue($opp->fresh()->tags->contains($tag));
-        $this->assertSame(1, Taggable::withTrashed()
-            ->where('tag_id', $tag->id)
-            ->where('taggable_id', $opp->id)
-            ->where('taggable_type', Opportunity::class)
-            ->count());
-        $this->assertTrue(DB::table('taggables')
-            ->where('tag_id', $tag->id)
-            ->where('taggable_id', $opp->id)
-            ->where('taggable_type', Opportunity::class)
-            ->whereNull('deleted_at')
-            ->exists());
-    }
+test('opportunity can have files', function (): void {
+    $opp = Opportunity::factory()->create();
+    $file = File::factory()->create();
+    $opp->files()->attach($file);
 
-    public function test_opportunity_files_are_deleted_when_opportunity_is_deleted()
-    {
-        $opp = Opportunity::factory()->create();
-        $file = File::factory()->create();
-        $opp->files()->attach($file);
-        $opp->delete();
-        $this->assertDatabaseMissing('fileables', [
-            'fileable_id' => $opp->id,
-            'fileable_type' => Opportunity::class,
-            'file_id' => $file->id,
-        ]);
-    }
+    $this->assertTrue($opp->files->contains($file));
+});
 
-    public function test_created_by_is_set_on_create()
-    {
-        $user = \App\Models\User::factory()->create();
-        $this->actingAs($user);
+test('opportunity can sync tags', function (): void {
+    $opp = Opportunity::factory()->create();
+    $tags = Tag::factory()->count(3)->create();
+    $opp->tags()->sync($tags->pluck('id')->toArray());
 
-        $opp = Opportunity::factory()->create();
+    $this->assertCount(3, $opp->tags);
+});
 
-        $this->assertEquals($user->id, $opp->created_by);
-    }
+test('opportunity can detach a tag', function (): void {
+    $opp = Opportunity::factory()->create();
+    $tag = Tag::factory()->create();
+    $opp->attachTag($tag);
+    $opp->tags()->detach($tag);
+    $opp->refresh();
 
-    public function test_updated_by_is_set_on_update()
-    {
-        $user = \App\Models\User::factory()->create();
-        $this->actingAs($user);
+    $this->assertFalse($opp->tags->contains($tag));
+});
 
-        $opp = Opportunity::factory()->create();
-        $opp->update(['name' => 'Changed Name']);
+test('opportunity can restore soft deleted tag pivot', function (): void {
+    $opp = Opportunity::factory()->create();
+    $tag = Tag::factory()->create();
+    $now = now();
 
-        $opp->refresh();
-        $this->assertEquals($user->id, $opp->updated_by);
-    }
+    DB::table('taggables')->insert([
+        'tag_id' => $tag->id,
+        'taggable_id' => $opp->id,
+        'taggable_type' => Opportunity::class,
+        'created_at' => $now,
+        'updated_at' => $now,
+        'deleted_at' => $now,
+    ]);
 
-    public function test_deleted_by_is_set_on_delete()
-    {
-        $user = \App\Models\User::factory()->create();
-        $this->actingAs($user);
+    $opp->attachTag($tag);
 
-        $opp = Opportunity::factory()->create();
-        $opp->delete();
+    $this->assertTrue($opp->fresh()->tags->contains($tag));
+    $this->assertSame(1, Taggable::withTrashed()
+        ->where('tag_id', $tag->id)
+        ->where('taggable_id', $opp->id)
+        ->where('taggable_type', Opportunity::class)
+        ->count());
+    $this->assertTrue(DB::table('taggables')
+        ->where('tag_id', $tag->id)
+        ->where('taggable_id', $opp->id)
+        ->where('taggable_type', Opportunity::class)
+        ->whereNull('deleted_at')
+        ->exists());
+});
 
-        $opp = Opportunity::withTrashed()->find($opp->id);
-        $this->assertEquals($user->id, $opp->deleted_by);
-    }
-}
+test('opportunity files are deleted when opportunity is deleted', function (): void {
+    $opp = Opportunity::factory()->create();
+    $file = File::factory()->create();
+    $opp->files()->attach($file);
+    $opp->delete();
+
+    $this->assertDatabaseMissing('fileables', [
+        'fileable_id' => $opp->id,
+        'fileable_type' => Opportunity::class,
+        'file_id' => $file->id,
+    ]);
+});
+
+test('created by is set on create', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $opp = Opportunity::factory()->create();
+
+    $this->assertEquals($user->id, $opp->created_by);
+});
+
+test('updated by is set on update', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $opp = Opportunity::factory()->create();
+    $opp->update(['name' => 'Changed Name']);
+
+    $opp->refresh();
+    $this->assertEquals($user->id, $opp->updated_by);
+});
+
+test('deleted by is set on delete', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $opp = Opportunity::factory()->create();
+    $opp->delete();
+
+    $opp = Opportunity::withTrashed()->find($opp->id);
+    $this->assertEquals($user->id, $opp->deleted_by);
+});
