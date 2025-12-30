@@ -3,17 +3,25 @@
 namespace App\Policies;
 
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
-class OrderPolicy
+class OrganizationPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isAdmin() || $user->hasRole(Role::ORGANIZATION_MANAGER);
+    }
+
+    /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): bool
+    {
+        return $user->isAdmin();
     }
 
     /**
@@ -21,7 +29,7 @@ class OrderPolicy
      */
     public function view(User $user, Organization $organization): bool
     {
-        return false;
+        return $user->isAdmin() || $this->isMember($user, $organization);
     }
 
     /**
@@ -29,7 +37,7 @@ class OrderPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 
     /**
@@ -37,7 +45,7 @@ class OrderPolicy
      */
     public function update(User $user, Organization $organization): bool
     {
-        return false;
+        return $user->isAdmin() || $this->isMember($user, $organization);
     }
 
     /**
@@ -45,7 +53,7 @@ class OrderPolicy
      */
     public function delete(User $user, Organization $organization): bool
     {
-        return false;
+        return $user->isAdmin() || $this->isMember($user, $organization);
     }
 
     /**
@@ -53,7 +61,7 @@ class OrderPolicy
      */
     public function restore(User $user, Organization $organization): bool
     {
-        return false;
+        return $user->isAdmin() || $this->isMember($user, $organization);
     }
 
     /**
@@ -61,6 +69,11 @@ class OrderPolicy
      */
     public function forceDelete(User $user, Organization $organization): bool
     {
-        return false;
+        return $user->isAdmin();
+    }
+
+    private function isMember(User $user, Organization $organization): bool
+    {
+        return $organization->users()->where('users.id', $user->id)->exists();
     }
 }

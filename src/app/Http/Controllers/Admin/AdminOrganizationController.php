@@ -9,7 +9,6 @@ use App\Http\Responses\ApiResponse;
 use App\Http\Responses\BrowserResponse;
 use App\Models\Organization;
 use App\Models\User;
-use App\Models\Role;
 use Illuminate\Http\Request;
 
 class AdminOrganizationController extends ApiController
@@ -17,14 +16,17 @@ class AdminOrganizationController extends ApiController
     public function index(Request $request)
     {
         $user = $request->user();
+        if (!$user?->can('viewAny', Organization::class)) {
+            abort(403, 'Unauthorized.');
+        }
+
         $query = Organization::with('users');
+        if (!$user->can('viewAll', Organization::class)) {
+            $query->visibleToUser($user);
+        }
 
         if ($search = $request->query('search')) {
             $query->where('name', 'ilike', "%{$search}%");
-        }
-
-        if ($user && !$user->isAdmin()) {
-            $query->whereHas('users', fn ($q) => $q->where('users.id', $user->id));
         }
 
         $organizations = $query->orderBy('name')->limit(50)->get();
@@ -41,7 +43,7 @@ class AdminOrganizationController extends ApiController
 
     public function showCreate(Request $request)
     {
-        if (!$request->user()?->isAdmin()) {
+        if (!$request->user()?->can('create', Organization::class)) {
             abort(403, 'Unauthorized.');
         }
 
@@ -57,7 +59,9 @@ class AdminOrganizationController extends ApiController
     public function show(Request $request, $id)
     {
         $organization = Organization::with('users')->findOrFail($id);
-        $this->ensureCanAccessOrganization($request->user(), $organization);
+        if (!$request->user()?->can('view', $organization)) {
+            abort(403, 'Unauthorized.');
+        }
         $resource = new OrganizationResource($organization);
 
         if (static::isApiRequest($request)) {
@@ -71,7 +75,7 @@ class AdminOrganizationController extends ApiController
 
     public function store(OrganizationUpsertRequest $request)
     {
-        if (!$request->user()?->isAdmin()) {
+        if (!$request->user()?->can('create', Organization::class)) {
             abort(403, 'Unauthorized.');
         }
 
@@ -98,12 +102,14 @@ class AdminOrganizationController extends ApiController
     {
         $organization = Organization::findOrFail($id);
         $user = $request->user();
-        $this->ensureCanAccessOrganization($user, $organization);
+        if (!$user?->can('update', $organization)) {
+            abort(403, 'Unauthorized.');
+        }
 
         $data = $request->validated();
         $userIds = $data['user_ids'] ?? null;
 
-        if (!$user?->isAdmin()) {
+        if (!$user->can('viewAll', Organization::class)) {
             // Organization managers can update org details but not membership
             $userIds = null;
         }
@@ -127,11 +133,10 @@ class AdminOrganizationController extends ApiController
 
     public function destroy(Request $request, $id)
     {
-        if (!$request->user()?->isAdmin()) {
+        $organization = Organization::findOrFail($id);
+        if (!$request->user()?->can('delete', $organization)) {
             abort(403, 'Unauthorized.');
         }
-
-        $organization = Organization::findOrFail($id);
         $organization->delete();
 
         if (static::isApiRequest($request)) {
@@ -143,11 +148,10 @@ class AdminOrganizationController extends ApiController
 
     public function attachUser(Request $request, $organizationId, $userId)
     {
-        if (!$request->user()?->isAdmin()) {
+        $organization = Organization::findOrFail($organizationId);
+        if (!$request->user()?->can('update', $organization)) {
             abort(403, 'Unauthorized.');
         }
-
-        $organization = Organization::findOrFail($organizationId);
         $user = User::findOrFail($userId);
 
         $organization->users()->syncWithoutDetaching([$user->id]);
@@ -163,11 +167,10 @@ class AdminOrganizationController extends ApiController
 
     public function detachUser(Request $request, $organizationId, $userId)
     {
-        if (!$request->user()?->isAdmin()) {
+        $organization = Organization::findOrFail($organizationId);
+        if (!$request->user()?->can('update', $organization)) {
             abort(403, 'Unauthorized.');
         }
-
-        $organization = Organization::findOrFail($organizationId);
         $user = User::findOrFail($userId);
 
         $organization->users()->detach($user->id);
@@ -181,21 +184,4 @@ class AdminOrganizationController extends ApiController
         return ApiResponse::model($resource);
     }
 
-    protected function ensureCanAccessOrganization(?User $user, Organization $organization): void
-    {
-        if (!$user) {
-            abort(403, 'Unauthorized.');
-        }
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        $isManagerOfOrg = $user->hasRole(Role::ORGANIZATION_MANAGER)
-            && $organization->users()->where('users.id', $user->id)->exists();
-
-        if (!$isManagerOfOrg) {
-            abort(403, 'Unauthorized.');
-        }
-    }
 }

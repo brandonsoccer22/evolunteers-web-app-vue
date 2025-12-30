@@ -9,6 +9,7 @@ use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
 use Laravel\Scout\Searchable;
+use Illuminate\Database\Eloquent\Builder;
 
 class Opportunity extends Model implements Auditable
 {
@@ -54,7 +55,7 @@ class Opportunity extends Model implements Auditable
 
     public function organizations()
     {
-        return $this->belongsToMany(Organization::class)->using(OpportunityOrganization::class);
+        return $this->belongsToMany(Organization::class)->using(OpportunityOrganization::class)->wherePivotNull('deleted_at');
     }
 
     public function profileImage()
@@ -70,7 +71,19 @@ class Opportunity extends Model implements Auditable
     public function files()
     {
         return $this->morphToMany(File::class, 'fileable')
-            ->using(\App\Models\Fileable::class);
+            ->using(\App\Models\Fileable::class)
+            ->wherePivotNull('deleted_at');
+    }
+
+    public function scopeVisibleToUser(Builder $query, ?User $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('organizations', function ($orgQuery) use ($user) {
+            $orgQuery->whereHas('users', fn ($userQuery) => $userQuery->where('users.id', $user->id));
+        });
     }
 
     public function searchableAs(): string

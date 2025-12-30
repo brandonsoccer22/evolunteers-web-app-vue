@@ -8,6 +8,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use App\Traits\HasBaseModelFeatures;
 use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 
 class Organization extends Model implements Auditable
 {
@@ -57,6 +58,15 @@ class Organization extends Model implements Auditable
         return $this->belongsToMany(User::class, 'organization_user')
             ->using(OrganizationUser::class)
             ->wherePivotNull('deleted_at');
+    }
+
+    public function scopeVisibleToUser(Builder $query, ?User $user): Builder
+    {
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('users', fn ($q) => $q->where('users.id', $user->id));
     }
 
 
