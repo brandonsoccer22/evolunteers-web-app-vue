@@ -11,13 +11,14 @@ class EnsureUserHasRole
     /**
      * Handle an incoming request.
      *
-     * @param  string  $roles  Comma separated list of role names
+     * @param  string  ...$roles  Role names (comma-separated strings are also accepted)
      */
-    public function handle(Request $request, Closure $next, string $roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
-        $roleList = collect(explode(',', $roles))
-            ->map(fn ($role) => trim($role))
+        $roleList = collect($roles)
+            ->flatMap(fn (string $role) => explode(',', $role))
+            ->map(fn (string $role) => trim($role))
             ->filter()
             ->values()
             ->all();
