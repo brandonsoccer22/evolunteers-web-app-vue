@@ -57,6 +57,11 @@ Run `php artisan user:create-test`
 Run `mkcert -CAROOT` and add rootCA.pem as a Custom CA Certificate in Bruno
 Set the environment to local and update the email and password
 
+## Roadmap
+
+- Opportunity image/file management (upload, storage, and display)
+- User sign up for Opportunities (registration/volunteering workflow)
+- .ics export for Opportunities (calendar integration)
 
 
 
